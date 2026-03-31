@@ -1,0 +1,48 @@
+from django.urls import path
+
+from aiagent.views import (
+    AdminAnalyticsAPIView,
+    AdminSessionHistoryAPIView,
+    AdminSessionsAPIView,
+    AdminSearchAPIView,
+    AdminUserJourneyAPIView,
+    ChatAPIView,
+    ContentDetailAPIView,
+    MetricsAPIView,
+    PortfolioContextAPIView,
+    ResumeDownloadAPIView,
+    StartSessionAPIView,
+    SuperAdminAddAdminAPIView,
+    SuperAdminAdminsAPIView,
+    SuperAdminAIConfigAPIView,
+    SuperAdminHeatmapAPIView,
+    SuperAdminRemoveAdminAPIView,
+    SuperAdminSystemHealthAPIView,
+    SuperAdminUpdateAIConfigAPIView,
+    SuperAdminUpdateContentAPIView,
+    TrackEventAPIView,
+)
+
+urlpatterns = [
+    path("content/<str:key>/", ContentDetailAPIView.as_view(), name="content-detail"),
+    path("metrics/", MetricsAPIView.as_view(), name="metrics"),
+    path("events/", TrackEventAPIView.as_view(), name="track-event"),
+    path("start-session/", StartSessionAPIView.as_view(), name="start-session"),
+    path("portfolio/", PortfolioContextAPIView.as_view(), name="portfolio-context"),
+    path("portfolio/resume/", ResumeDownloadAPIView.as_view(), name="resume-download"),
+    path("chat/", ChatAPIView.as_view(), name="chat"),
+    path("admin/analytics/", AdminAnalyticsAPIView.as_view(), name="admin-analytics"),
+    path("admin/sessions/", AdminSessionsAPIView.as_view(), name="admin-sessions"),
+    path("admin/search/", AdminSearchAPIView.as_view(), name="admin-search"),
+    path("admin/history/<uuid:session_id>/", AdminSessionHistoryAPIView.as_view(), name="admin-session-history"),
+    path("admin/user-journey/<uuid:session_id>/", AdminUserJourneyAPIView.as_view(), name="admin-user-journey"),
+    path("superadmin/admins/", SuperAdminAdminsAPIView.as_view(), name="superadmin-admins"),
+    path("superadmin/add-admin/", SuperAdminAddAdminAPIView.as_view(), name="superadmin-add-admin"),
+    path("superadmin/remove-admin/<int:admin_id>/", SuperAdminRemoveAdminAPIView.as_view(), name="superadmin-remove-admin"),
+    path("superadmin/update-content/", SuperAdminUpdateContentAPIView.as_view(), name="superadmin-update-content"),
+    path("superadmin/ai-config/", SuperAdminAIConfigAPIView.as_view(), name="superadmin-ai-config"),
+    path("superadmin/update-ai-config/", SuperAdminUpdateAIConfigAPIView.as_view(), name="superadmin-update-ai-config"),
+    path("superadmin/heatmap/", SuperAdminHeatmapAPIView.as_view(), name="superadmin-heatmap"),
+    path("superadmin/system-health/", SuperAdminSystemHealthAPIView.as_view(), name="superadmin-system-health"),
+]
+
