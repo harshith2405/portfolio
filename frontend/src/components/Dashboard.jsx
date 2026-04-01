@@ -6,6 +6,12 @@ import Projects from "./Projects";
 import Skills from "./Skills";
 import SuperAdminPanel from "./SuperAdminPanel";
 
+const resumeDownloadUrl =
+  import.meta.env.VITE_RESUME_DOWNLOAD_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api/portfolio/resume/`
+    : "/api/portfolio/resume/");
+
 function parseKeyValueLines(sectionText) {
   return Object.fromEntries(
     (sectionText || "")
@@ -388,7 +394,7 @@ function Dashboard({
             <div className="mt-5 grid gap-3">
               <a
                 className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/40"
-                href="http://127.0.0.1:8000/api/portfolio/resume/"
+                href={resumeDownloadUrl}
                 target="_blank"
                 rel="noreferrer"
               >

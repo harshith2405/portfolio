@@ -31,6 +31,19 @@ const ACTIVE_TABS_KEY = "portfolio_active_tabs";
 const MOCK_LOCATIONS = ["Hyderabad", "Bengaluru", "Pune", "Chennai", "Mumbai"];
 const PRESENCE_TTL_MS = 20000;
 
+function getWebSocketBaseUrl() {
+  if (typeof window === "undefined") {
+    return "ws://localhost:8000";
+  }
+
+  if (import.meta.env.VITE_WS_BASE_URL) {
+    return import.meta.env.VITE_WS_BASE_URL.replace(/\/$/, "");
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${protocol}://${window.location.host}`;
+}
+
 function parseKeyValueLines(sectionText) {
   return Object.fromEntries(
     (sectionText || "")
@@ -343,13 +356,8 @@ function Home() {
       window.localStorage.setItem(ACTIVE_TABS_KEY, JSON.stringify(nextTabs));
     };
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const backendHost =
-      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        ? "127.0.0.1:8000"
-        : `${window.location.hostname}:8000`;
     const socket = new WebSocket(
-      `${protocol}://${backendHost}/ws/presence/?name=${encodeURIComponent(visitorName)}&location=${encodeURIComponent(viewerLocation)}`
+      `${getWebSocketBaseUrl()}/ws/presence/?name=${encodeURIComponent(visitorName)}&location=${encodeURIComponent(viewerLocation)}`
     );
 
     socket.onmessage = (event) => {
