@@ -33,6 +33,7 @@ export const getHistory = async (sessionId, name) =>
 export const createConversation = async (name) => api.post("conversations/", { name });
 
 export const getPortfolio = async () => api.get("portfolio/");
+export const getProjectInfo = async () => api.get("project-info/");
 export const getContent = async (key) => api.get(`content/${key}/`);
 export const getMetrics = async () => api.get("metrics/");
 export const trackEvent = async (payload) => api.post("events/", payload);

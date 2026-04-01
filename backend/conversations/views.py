@@ -16,10 +16,22 @@ class ConversationListAPIView(APIView):
 
     def get(self, request):
         visitor_name = request.query_params.get("name")
+        request_session = None
+
         try:
-            conversations = ConversationService.get_conversations_for_visitor(
-                visitor_name
-            )
+            request_session = get_request_session(request)
+        except PermissionDenied:
+            request_session = None
+
+        try:
+            if request_session and request_session.role == "user":
+                conversations = ConversationService.get_conversations_for_session(
+                    request_session.id
+                )
+            else:
+                conversations = ConversationService.get_conversations_for_visitor(
+                    visitor_name
+                )
         except ValueError as exc:
             return Response(
                 {"error": str(exc)},
@@ -61,11 +73,18 @@ class ConversationMessagesAPIView(APIView):
 
     def get(self, request, conversation_id):
         visitor_name = request.query_params.get("name")
+        request_session = None
+
+        try:
+            request_session = get_request_session(request)
+        except PermissionDenied:
+            request_session = None
 
         try:
             conversation = ConversationService.get_or_create_conversation(
                 visitor_name=visitor_name,
                 conversation_id=conversation_id,
+                session=request_session,
             )
         except ValueError as exc:
             status_code = (
@@ -91,11 +110,18 @@ class ConversationDetailAPIView(APIView):
 
     def get(self, request, conversation_id):
         visitor_name = request.query_params.get("name")
+        request_session = None
+
+        try:
+            request_session = get_request_session(request)
+        except PermissionDenied:
+            request_session = None
 
         try:
             conversation = ConversationService.get_or_create_conversation(
                 visitor_name=visitor_name,
                 conversation_id=conversation_id,
+                session=request_session,
             )
         except ValueError as exc:
             status_code = (

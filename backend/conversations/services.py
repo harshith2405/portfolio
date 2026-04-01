@@ -29,6 +29,12 @@ class ConversationService:
                     id=conversation_id,
                     visitor_name__iexact=visitor_name,
                 )
+                if (
+                    session_obj
+                    and session_obj.role == "user"
+                    and conversation.session_id != session_obj.id
+                ):
+                    raise ValueError("Invalid conversation_id")
                 if session_obj and conversation.session_id is None:
                     conversation.session = session_obj
                     conversation.save(update_fields=["session"])

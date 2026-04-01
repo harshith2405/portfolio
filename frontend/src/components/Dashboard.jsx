@@ -24,12 +24,38 @@ function parseProjectBlocks(sectionText) {
   const projects = [];
   let currentProject = null;
   let currentMode = "";
+  const normalizeProjectKey = (name) => {
+    const normalized = (name || "").toLowerCase();
+    if (normalized.includes("interview ai") || normalized.includes("interview trainer")) {
+      return "interview-ai";
+    }
+    return normalized;
+  };
 
   const pushCurrent = () => {
     if (currentProject?.name) {
-      projects.push({
+      const canonicalKey = normalizeProjectKey(currentProject.name);
+      const existingIndex = projects.findIndex(
+        (project) => normalizeProjectKey(project.name) === canonicalKey
+      );
+      const nextProject = {
         ...currentProject,
         contribution: currentProject.contribution || [],
+        whyMatters: currentProject.whyMatters || [],
+        designChoices: currentProject.designChoices || [],
+        constraints: currentProject.constraints || [],
+      };
+
+      if (existingIndex >= 0) {
+        projects[existingIndex] = {
+          ...projects[existingIndex],
+          ...nextProject,
+        };
+        return;
+      }
+
+      projects.push({
+        ...nextProject,
       });
     }
   };
@@ -43,6 +69,9 @@ function parseProjectBlocks(sectionText) {
       currentProject = {
         name: line.replace("- Project name:", "").trim(),
         contribution: [],
+        whyMatters: [],
+        designChoices: [],
+        constraints: [],
       };
       currentMode = "";
       return;
@@ -62,6 +91,21 @@ function parseProjectBlocks(sectionText) {
       return;
     }
 
+    if (line.startsWith("Why this project matters:")) {
+      currentMode = "whyMatters";
+      return;
+    }
+
+    if (line.startsWith("Design choices:")) {
+      currentMode = "designChoices";
+      return;
+    }
+
+    if (line.startsWith("Constraints / trade-offs:")) {
+      currentMode = "constraints";
+      return;
+    }
+
     if (line.startsWith("Your contribution:")) {
       currentMode = "contribution";
       return;
@@ -73,8 +117,24 @@ function parseProjectBlocks(sectionText) {
       return;
     }
 
-    if (line.startsWith("- ") && currentMode === "contribution") {
-      currentProject.contribution.push(line.slice(2).trim());
+    if (line.startsWith("- ")) {
+      const item = line.slice(2).trim();
+      if (currentMode === "contribution") {
+        currentProject.contribution.push(item);
+        return;
+      }
+      if (currentMode === "whyMatters") {
+        currentProject.whyMatters.push(item);
+        return;
+      }
+      if (currentMode === "designChoices") {
+        currentProject.designChoices.push(item);
+        return;
+      }
+      if (currentMode === "constraints") {
+        currentProject.constraints.push(item);
+        return;
+      }
       return;
     }
 
@@ -124,6 +184,44 @@ function parseSkills(sectionText) {
   return { groups, strengths };
 }
 
+function buildDefaultSnapshotContent(basics, contact) {
+  const githubUrl = contact.github
+    ? contact.github.startsWith("http")
+      ? contact.github
+      : `https://github.com/${contact.github}`
+    : "";
+  const linkedinUrl = contact.linkedin
+    ? contact.linkedin.startsWith("http")
+      ? contact.linkedin
+      : `https://${contact.linkedin}`
+    : "";
+
+  return [
+    "Education:",
+    "10th|10 GPA|Narayana High School|2019-2020",
+    "Inter|943|Sri Chaitanya College|2020-2022",
+    "B.Tech|8.4 GPA|VNR VJIET|2022-2026",
+    "",
+    "Links:",
+    contact.email ? `Email|mailto:${contact.email}|${contact.email}` : "",
+    githubUrl ? `GitHub|${githubUrl}|${contact.github}` : "",
+    linkedinUrl ? `LinkedIn|${linkedinUrl}|LinkedIn` : "",
+    contact.leetcode ? `LeetCode|${contact.leetcode}|LeetCode` : "",
+    contact.hackerrank ? `HackerRank|${contact.hackerrank}|HackerRank` : "",
+    "",
+    "Details:",
+    basics.location ? `Location|${basics.location}` : "",
+    basics.experience ? `Experience|${basics.experience}` : "",
+    basics.college ? `College|${basics.college}` : "",
+    basics.branch ? `Branch|${basics.branch}` : "",
+    "",
+    "Positioning:",
+    "Full-stack product builder with AI system design instincts and strong problem-solving fundamentals.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function Dashboard({
   activeSection,
   adminConsoleTab,
@@ -134,6 +232,7 @@ function Dashboard({
   adminSessions,
   adminUsers,
   aiConfig,
+  contentSaveStatus,
   contentDrafts,
   focusedProject,
   heatmapData,
@@ -155,6 +254,7 @@ function Dashboard({
   onUpdateAIConfig,
   onUpdateContent,
   portfolio,
+  projectInfo,
   presence,
   projectsRef,
   role,
@@ -172,6 +272,8 @@ function Dashboard({
   const projects = parseProjectBlocks(sections.projects);
   const { groups: skillGroups, strengths } = parseSkills(sections.skills);
   const internshipSummary = sections.internships || "";
+  const snapshotContent =
+    sections["candidate snapshot"] || buildDefaultSnapshotContent(basics, contact);
   const achievements = (sections["resume highlights"] || "")
     .split("\n")
     .map((line) => line.trim())
@@ -189,11 +291,18 @@ function Dashboard({
         visitorName={visitorName}
       />
       <MetricsPanel metrics={metrics} presence={presence} />
-      <Hero basics={basics} bio={sections["short bio"]} contact={contact} />
+      <Hero
+        basics={basics}
+        bio={sections["short bio"]}
+        contact={contact}
+        internshipSummary={internshipSummary}
+        snapshotContent={snapshotContent}
+      />
       <Projects
         focusedProject={focusedProject}
         highlight={activeSection === "projects"}
         onProjectClick={onProjectClick}
+        projectInfo={projectInfo}
         projects={projects}
         sectionRef={projectsRef}
       />
@@ -212,6 +321,7 @@ function Dashboard({
           adminReplay={adminReplay}
           admins={adminUsers}
           adminSessions={adminSessions}
+          contentSaveStatus={contentSaveStatus}
           contentDrafts={contentDrafts}
           loading={loadingAdminTools}
           onAddAdmin={onAddAdmin}

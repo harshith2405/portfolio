@@ -227,3 +227,22 @@ class AIConfig(models.Model):
 
     def __str__(self):
         return f"AI Config (tone={self.tone}, length={self.response_length})"
+
+
+class ProjectInfo(models.Model):
+    slug = models.SlugField(unique=True)
+    project_name = models.CharField(max_length=255)
+    summary = models.TextField(blank=True)
+    why_matters = models.JSONField(default=list, blank=True)
+    design_choices = models.JSONField(default=list, blank=True)
+    contribution = models.JSONField(default=list, blank=True)
+    constraints = models.JSONField(default=list, blank=True)
+    outcome = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "project_name"]
+
+    def __str__(self):
+        return self.project_name

@@ -10,6 +10,7 @@ from aiagent.views import (
     ContentDetailAPIView,
     MetricsAPIView,
     PortfolioContextAPIView,
+    ProjectInfoListAPIView,
     ResumeDownloadAPIView,
     StartSessionAPIView,
     SuperAdminAddAdminAPIView,
@@ -20,6 +21,7 @@ from aiagent.views import (
     SuperAdminSystemHealthAPIView,
     SuperAdminUpdateAIConfigAPIView,
     SuperAdminUpdateContentAPIView,
+    SuperAdminUpsertProjectInfoAPIView,
     TrackEventAPIView,
 )
 
@@ -30,6 +32,7 @@ urlpatterns = [
     path("start-session/", StartSessionAPIView.as_view(), name="start-session"),
     path("portfolio/", PortfolioContextAPIView.as_view(), name="portfolio-context"),
     path("portfolio/resume/", ResumeDownloadAPIView.as_view(), name="resume-download"),
+    path("project-info/", ProjectInfoListAPIView.as_view(), name="project-info-list"),
     path("chat/", ChatAPIView.as_view(), name="chat"),
     path("admin/analytics/", AdminAnalyticsAPIView.as_view(), name="admin-analytics"),
     path("admin/sessions/", AdminSessionsAPIView.as_view(), name="admin-sessions"),
@@ -40,9 +43,9 @@ urlpatterns = [
     path("superadmin/add-admin/", SuperAdminAddAdminAPIView.as_view(), name="superadmin-add-admin"),
     path("superadmin/remove-admin/<int:admin_id>/", SuperAdminRemoveAdminAPIView.as_view(), name="superadmin-remove-admin"),
     path("superadmin/update-content/", SuperAdminUpdateContentAPIView.as_view(), name="superadmin-update-content"),
+    path("superadmin/project-info/", SuperAdminUpsertProjectInfoAPIView.as_view(), name="superadmin-project-info"),
     path("superadmin/ai-config/", SuperAdminAIConfigAPIView.as_view(), name="superadmin-ai-config"),
     path("superadmin/update-ai-config/", SuperAdminUpdateAIConfigAPIView.as_view(), name="superadmin-update-ai-config"),
     path("superadmin/heatmap/", SuperAdminHeatmapAPIView.as_view(), name="superadmin-heatmap"),
     path("superadmin/system-health/", SuperAdminSystemHealthAPIView.as_view(), name="superadmin-system-health"),
 ]
-

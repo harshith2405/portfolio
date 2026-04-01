@@ -7,6 +7,7 @@ from .models import (
     Conversation,
     EditableContent,
     Message,
+    ProjectInfo,
     UserEvent,
     UserSession,
 )
@@ -99,3 +100,21 @@ class AIConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIConfig
         fields = ["tone", "response_length", "updated_at"]
+
+
+class ProjectInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectInfo
+        fields = [
+            "id",
+            "slug",
+            "project_name",
+            "summary",
+            "why_matters",
+            "design_choices",
+            "contribution",
+            "constraints",
+            "outcome",
+            "sort_order",
+            "updated_at",
+        ]

@@ -35,7 +35,8 @@ from aiagent.context_loader import (
 )
 from aiagent.gemini import GeminiService
 from aiagent.presence import DEFAULT_LOCATIONS
-from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, UserEvent, UserSession
+from aiagent.prompts import build_portfolio_chat_prompt
+from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, ProjectInfo, UserEvent, UserSession
 from conversations.serializers import (
     AIConfigSerializer,
     AdminUserSerializer,
@@ -43,12 +44,21 @@ from conversations.serializers import (
     ConversationSerializer,
     EditableContentSerializer,
     MessageSerializer,
+    ProjectInfoSerializer,
     UserEventSerializer,
     UserSessionSerializer,
 )
 from conversations.services import ConversationService
 
 SERVER_START_TIME = time.time()
+
+
+def get_visible_session_roles(role: str) -> set[str]:
+    if role == "super_admin":
+        return {"user", "admin", "super_admin"}
+    if role == "admin":
+        return {"user", "admin"}
+    return {"user"}
 
 
 def infer_action(message: str) -> str | None:
@@ -118,24 +128,31 @@ class StartSessionAPIView(APIView):
 
         user_session = start_user_session(visitor_name, role)
 
-        try:
-            conversations = ConversationService.get_conversations_for_visitor(visitor_name)
-        except ValueError as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        session = conversations.first()
-        if session is None:
+        if role == "user":
             session = ConversationService.get_or_create_conversation(
                 visitor_name=visitor_name,
                 session=user_session,
             )
-            conversations = ConversationService.get_conversations_for_visitor(visitor_name)
-        elif session.session_id is None:
-            session.session = user_session
-            session.save(update_fields=["session"])
+            conversations = ConversationService.get_conversations_for_session(user_session.id)
+        else:
+            try:
+                conversations = ConversationService.get_conversations_for_visitor(visitor_name)
+            except ValueError as exc:
+                return Response(
+                    {"error": str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            session = conversations.first()
+            if session is None:
+                session = ConversationService.get_or_create_conversation(
+                    visitor_name=visitor_name,
+                    session=user_session,
+                )
+                conversations = ConversationService.get_conversations_for_visitor(visitor_name)
+            elif session.session_id is None:
+                session.session = user_session
+                session.save(update_fields=["session"])
 
         record_portfolio_event(
             event_type="session_started",
@@ -183,6 +200,12 @@ class ResumeDownloadAPIView(APIView):
         response = HttpResponse(load_portfolio_context(), content_type="text/markdown")
         response["Content-Disposition"] = 'attachment; filename="resume_snapshot.md"'
         return response
+
+
+class ProjectInfoListAPIView(APIView):
+    def get(self, request):
+        project_info = ProjectInfo.objects.all()
+        return Response(ProjectInfoSerializer(project_info, many=True).data, status=status.HTTP_200_OK)
 
 
 class MetricsAPIView(APIView):
@@ -316,23 +339,15 @@ class ChatAPIView(APIView):
             "long": "Provide detailed, comprehensive responses with examples.",
         }
 
-        prompt = (
-            "You are a recruiter-facing portfolio assistant.\n"
-            "Answer only from the provided portfolio context and recent conversation.\n"
-            f"TONE: {tone_instructions.get(ai_config.tone, tone_instructions['friendly'])}\n"
-            f"LENGTH: {length_instructions.get(ai_config.response_length, length_instructions['medium'])}\n"
-            "If the portfolio context does not contain the answer, say that the information "
-            "has not been added yet and invite the recruiter to ask another question.\n\n"
+        prompt = build_portfolio_chat_prompt(
+            tone_instruction=tone_instructions.get(ai_config.tone, tone_instructions["friendly"]),
+            length_instruction=length_instructions.get(
+                ai_config.response_length,
+                length_instructions["medium"],
+            ),
+            fixed_context=fixed_context,
+            recent_messages=recent_messages,
         )
-
-        if fixed_context:
-            prompt += f"FIXED PORTFOLIO CONTEXT:\n{fixed_context}\n\n"
-
-        prompt += "RECENT CONVERSATION:\n"
-        for msg in recent_messages:
-            prompt += f"{msg.role.upper()}: {msg.content.get('text', '')}\n"
-
-        prompt += "ASSISTANT:"
 
         service = GeminiService()
         reply = service.get_response(prompt)
@@ -388,17 +403,19 @@ class ChatAPIView(APIView):
 
 class AdminSessionsAPIView(APIView):
     def get(self, request):
-        require_roles(request, {"admin", "super_admin"})
-        sessions = UserSession.objects.order_by("-last_active_at")
+        request_session = require_roles(request, {"admin", "super_admin"})
+        visible_roles = get_visible_session_roles(request_session.role)
+        sessions = UserSession.objects.filter(role__in=visible_roles).order_by("-last_active_at")
         return Response(UserSessionSerializer(sessions, many=True).data, status=status.HTTP_200_OK)
 
 
 class AdminSessionHistoryAPIView(APIView):
     def get(self, request, session_id):
-        require_roles(request, {"admin", "super_admin"})
+        request_session = require_roles(request, {"admin", "super_admin"})
+        visible_roles = get_visible_session_roles(request_session.role)
 
         try:
-            user_session = UserSession.objects.get(id=session_id)
+            user_session = UserSession.objects.get(id=session_id, role__in=visible_roles)
         except UserSession.DoesNotExist:
             return Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -418,19 +435,30 @@ class AdminSessionHistoryAPIView(APIView):
 
 class AdminAnalyticsAPIView(APIView):
     def get(self, request):
-        require_roles(request, {"admin", "super_admin"})
-        return Response(build_admin_analytics_payload(), status=status.HTTP_200_OK)
+        request_session = require_roles(request, {"admin", "super_admin"})
+        return Response(
+            build_admin_analytics_payload(request_session.role),
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminSearchAPIView(APIView):
     def get(self, request):
-        require_roles(request, {"admin", "super_admin"})
+        request_session = require_roles(request, {"admin", "super_admin"})
+        visible_roles = get_visible_session_roles(request_session.role)
         query = (request.query_params.get("query") or "").strip()
         if not query:
             return Response({"sessions": [], "messages": []}, status=status.HTTP_200_OK)
 
-        sessions = UserSession.objects.filter(name__icontains=query).order_by("-last_active_at")[:20]
-        messages = ChatMessage.objects.filter(message__icontains=query).select_related("session").order_by("-timestamp")[:30]
+        sessions = (
+            UserSession.objects.filter(role__in=visible_roles, name__icontains=query)
+            .order_by("-last_active_at")[:20]
+        )
+        messages = (
+            ChatMessage.objects.filter(session__role__in=visible_roles, message__icontains=query)
+            .select_related("session")
+            .order_by("-timestamp")[:30]
+        )
 
         return Response(
             {
@@ -440,6 +468,7 @@ class AdminSearchAPIView(APIView):
                         "id": item.id,
                         "session_id": str(item.session_id),
                         "session_name": item.session.name,
+                        "session_role": item.session.role,
                         "message": item.message,
                         "response": item.response,
                         "timestamp": item.timestamp,
@@ -453,10 +482,11 @@ class AdminSearchAPIView(APIView):
 
 class AdminUserJourneyAPIView(APIView):
     def get(self, request, session_id):
-        require_roles(request, {"admin", "super_admin"})
+        request_session = require_roles(request, {"admin", "super_admin"})
+        visible_roles = get_visible_session_roles(request_session.role)
 
         try:
-            user_session = UserSession.objects.get(id=session_id)
+            user_session = UserSession.objects.get(id=session_id, role__in=visible_roles)
         except UserSession.DoesNotExist:
             return Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -535,6 +565,34 @@ class SuperAdminUpdateContentAPIView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(EditableContentSerializer(content).data, status=status.HTTP_200_OK)
+
+
+class SuperAdminUpsertProjectInfoAPIView(APIView):
+    def post(self, request):
+        require_roles(request, {"super_admin"})
+        slug = (request.data.get("slug") or "").strip()
+        project_name = (request.data.get("project_name") or "").strip()
+
+        if not slug or not project_name:
+            return Response(
+                {"error": "slug and project_name are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        project_info, _ = ProjectInfo.objects.update_or_create(
+            slug=slug,
+            defaults={
+                "project_name": project_name,
+                "summary": request.data.get("summary", ""),
+                "why_matters": request.data.get("why_matters", []),
+                "design_choices": request.data.get("design_choices", []),
+                "contribution": request.data.get("contribution", []),
+                "constraints": request.data.get("constraints", []),
+                "outcome": request.data.get("outcome", ""),
+                "sort_order": request.data.get("sort_order", 0),
+            },
+        )
+        return Response(ProjectInfoSerializer(project_info).data, status=status.HTTP_200_OK)
 
 
 class SuperAdminAIConfigAPIView(APIView):

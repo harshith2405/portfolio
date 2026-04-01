@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 function Skills({ highlight, sectionRef, skillGroups, strengths }) {
+  const [selectedSkill, setSelectedSkill] = useState("");
+
   return (
     <section className="scroll-mt-24" data-section="skills" ref={sectionRef}>
       <motion.div
@@ -31,12 +34,18 @@ function Skills({ highlight, sectionRef, skillGroups, strengths }) {
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
                 {group.items.map((item) => (
-                  <span
-                    className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200"
+                  <button
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      selectedSkill === item
+                        ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-100"
+                        : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
+                    }`}
                     key={item}
+                    onClick={() => setSelectedSkill(item)}
+                    type="button"
                   >
                     {item}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -50,7 +59,19 @@ function Skills({ highlight, sectionRef, skillGroups, strengths }) {
             </div>
             <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-200 md:grid-cols-2">
               {strengths.map((item) => (
-                <li key={item}>• {item}</li>
+                <li key={item}>
+                  <button
+                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                      selectedSkill === item
+                        ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-50"
+                        : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
+                    }`}
+                    onClick={() => setSelectedSkill(item)}
+                    type="button"
+                  >
+                    {item}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>

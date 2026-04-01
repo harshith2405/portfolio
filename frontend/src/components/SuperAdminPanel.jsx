@@ -165,9 +165,9 @@ function SuperAdminPanel({
                     <SelectValue placeholder="Select tone" />
                   </SelectTrigger>
                   <SelectContent className="border-white/10 bg-slate-900">
-                    <SelectItem value="formal">🏢 Formal</SelectItem>
-                    <SelectItem value="friendly">😊 Friendly</SelectItem>
-                    <SelectItem value="technical">⚙️ Technical</SelectItem>
+                    <SelectItem value="formal">Formal</SelectItem>
+                    <SelectItem value="friendly">Friendly</SelectItem>
+                    <SelectItem value="technical">Technical</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -181,9 +181,9 @@ function SuperAdminPanel({
                     <SelectValue placeholder="Select length" />
                   </SelectTrigger>
                   <SelectContent className="border-white/10 bg-slate-900">
-                    <SelectItem value="short">📝 Short (1-2 sentences)</SelectItem>
-                    <SelectItem value="medium">📄 Medium (2-4 sentences)</SelectItem>
-                    <SelectItem value="long">📖 Long (detailed)</SelectItem>
+                    <SelectItem value="short">Short (1-2 sentences)</SelectItem>
+                    <SelectItem value="medium">Medium (2-4 sentences)</SelectItem>
+                    <SelectItem value="long">Long (detailed)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -422,7 +422,7 @@ function SuperAdminPanel({
                 <div>
                   <p className="text-sm text-slate-400">Avg Response</p>
                   <span className="text-xl font-bold text-white">
-                    {systemHealth?.avg_response_time_ms ?? "—"}
+                    {systemHealth?.avg_response_time_ms ?? "--"}
                     <span className="ml-0.5 text-sm font-normal text-slate-400">ms</span>
                   </span>
                 </div>
@@ -436,7 +436,7 @@ function SuperAdminPanel({
               <CardContent className="pt-6">
                 <p className="text-sm text-slate-400">Total Conversations</p>
                 <p className="mt-1 text-2xl font-bold text-white">
-                  {systemHealth?.total_conversations ?? "—"}
+                  {systemHealth?.total_conversations ?? "--"}
                 </p>
               </CardContent>
             </Card>
@@ -444,7 +444,7 @@ function SuperAdminPanel({
               <CardContent className="pt-6">
                 <p className="text-sm text-slate-400">Total Messages</p>
                 <p className="mt-1 text-2xl font-bold text-white">
-                  {systemHealth?.total_messages ?? "—"}
+                  {systemHealth?.total_messages ?? "--"}
                 </p>
               </CardContent>
             </Card>
@@ -452,7 +452,7 @@ function SuperAdminPanel({
               <CardContent className="pt-6">
                 <p className="text-sm text-slate-400">Server Uptime</p>
                 <p className="mt-1 text-2xl font-bold text-white">
-                  {systemHealth?.uptime ?? "—"}
+                  {systemHealth?.uptime ?? "--"}
                 </p>
               </CardContent>
             </Card>
@@ -464,3 +464,4 @@ function SuperAdminPanel({
 }
 
 export default SuperAdminPanel;
+

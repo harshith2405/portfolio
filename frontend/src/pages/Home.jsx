@@ -14,6 +14,7 @@ import {
   getHistory,
   getMetrics,
   getPortfolio,
+  getProjectInfo,
   getSystemHealth,
   getUserJourney,
   removeAdmin,
@@ -30,6 +31,59 @@ const ACTIVE_TABS_KEY = "portfolio_active_tabs";
 const MOCK_LOCATIONS = ["Hyderabad", "Bengaluru", "Pune", "Chennai", "Mumbai"];
 const PRESENCE_TTL_MS = 20000;
 
+function parseKeyValueLines(sectionText) {
+  return Object.fromEntries(
+    (sectionText || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("- ") && line.includes(":"))
+      .map((line) => {
+        const [label, ...valueParts] = line.slice(2).split(":");
+        return [label.trim().toLowerCase(), valueParts.join(":").trim()];
+      })
+  );
+}
+
+function buildDefaultSnapshotDraft(sections) {
+  const basics = parseKeyValueLines(sections["candidate basics"]);
+  const contact = parseKeyValueLines(sections.contact);
+  const githubUrl = contact.github
+    ? contact.github.startsWith("http")
+      ? contact.github
+      : `https://github.com/${contact.github}`
+    : "";
+  const linkedinUrl = contact.linkedin
+    ? contact.linkedin.startsWith("http")
+      ? contact.linkedin
+      : `https://${contact.linkedin}`
+    : "";
+
+  return [
+    "Education:",
+    "10th|10 GPA|Narayana High School|2019-2020",
+    "Inter|943|Sri Chaitanya College|2020-2022",
+    "B.Tech|8.4 GPA|VNR VJIET|2022-2026",
+    "",
+    "Links:",
+    contact.email ? `Email|mailto:${contact.email}|${contact.email}` : "",
+    githubUrl ? `GitHub|${githubUrl}|${contact.github}` : "",
+    linkedinUrl ? `LinkedIn|${linkedinUrl}|LinkedIn` : "",
+    contact.leetcode ? `LeetCode|${contact.leetcode}|LeetCode` : "",
+    contact.hackerrank ? `HackerRank|${contact.hackerrank}|HackerRank` : "",
+    "",
+    "Details:",
+    basics.location ? `Location|${basics.location}` : "",
+    basics.experience ? `Experience|${basics.experience}` : "",
+    basics.college ? `College|${basics.college}` : "",
+    basics.branch ? `Branch|${basics.branch}` : "",
+    "",
+    "Positioning:",
+    "Full-stack product builder with AI system design instincts and strong problem-solving fundamentals.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function Home() {
   const [visitorName, setVisitorName] = useState("");
   const [draftName, setDraftName] = useState("");
@@ -42,7 +96,9 @@ function Home() {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [portfolio, setPortfolio] = useState({ content: "", sections: {}, editable_content: [] });
+  const [projectInfo, setProjectInfo] = useState([]);
   const [contentDrafts, setContentDrafts] = useState({});
+  const [contentSaveStatus, setContentSaveStatus] = useState(null);
   const [activeSection, setActiveSection] = useState("");
   const [focusedProject, setFocusedProject] = useState("");
   const [presence, setPresence] = useState({ active_users: 0, latest_location: "" });
@@ -102,6 +158,10 @@ function Home() {
           : JSON.stringify(entry.value, null, 2);
     });
 
+    if (!nextDrafts["candidate snapshot"]) {
+      nextDrafts["candidate snapshot"] = buildDefaultSnapshotDraft(sections);
+    }
+
     return nextDrafts;
   };
 
@@ -123,6 +183,11 @@ function Home() {
     const response = await getPortfolio();
     setPortfolio(response.data);
     setContentDrafts(buildContentDrafts(response.data));
+  };
+
+  const loadProjectInfo = async () => {
+    const response = await getProjectInfo();
+    setProjectInfo(response.data);
   };
 
   const refreshMetrics = async () => {
@@ -207,6 +272,9 @@ function Home() {
   useEffect(() => {
     void loadPortfolio().catch((portfolioError) => {
       console.error("Failed to load portfolio context", portfolioError);
+    });
+    void loadProjectInfo().catch((projectInfoError) => {
+      console.error("Failed to load project info", projectInfoError);
     });
     void refreshMetrics().catch((metricsError) => {
       console.error("Failed to load metrics", metricsError);
@@ -615,6 +683,7 @@ function Home() {
   };
 
   const handleChangeContent = (key, value) => {
+    setContentSaveStatus(null);
     setContentDrafts((current) => ({ ...current, [key]: value }));
   };
 
@@ -623,9 +692,17 @@ function Home() {
       setLoadingAdminTools(true);
       await updateContent({ key, value: contentDrafts[key] || "" });
       await loadPortfolio();
+      setContentSaveStatus({
+        type: "success",
+        message: `${key} saved successfully.`,
+      });
     } catch (contentError) {
       console.error("Failed to update content", contentError);
       setError("Unable to update content right now.");
+      setContentSaveStatus({
+        type: "error",
+        message: `Failed to save ${key}.`,
+      });
     } finally {
       setLoadingAdminTools(false);
     }
@@ -645,6 +722,7 @@ function Home() {
             adminSessions={adminSessions}
             adminUsers={adminUsers}
             aiConfig={aiConfig}
+            contentSaveStatus={contentSaveStatus}
             contentDrafts={contentDrafts}
             focusedProject={focusedProject}
             heatmapData={heatmapData}
@@ -666,6 +744,7 @@ function Home() {
             onUpdateAIConfig={handleUpdateAIConfig}
             onUpdateContent={handleUpdateContent}
             portfolio={portfolio}
+            projectInfo={projectInfo}
             presence={presence}
             projectsRef={projectsRef}
             recruiterMode={recruiterMode}

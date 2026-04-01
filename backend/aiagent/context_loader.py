@@ -6,36 +6,7 @@ from conversations.models import EditableContent
 PORTFOLIO_CONTEXT_PATH = Path(__file__).resolve().parent / "portfolio_context.md"
 
 
-def _build_content_from_db() -> str:
-    content_rows = EditableContent.objects.order_by("key")
-    if not content_rows.exists():
-        return ""
-
-    sections = []
-    for row in content_rows:
-        value = row.value
-        if isinstance(value, str):
-            rendered = value.strip()
-        else:
-            rendered = str(value).strip()
-        if rendered:
-            sections.append(f"## {row.key.title()}\n{rendered}")
-    return "\n\n".join(sections).strip()
-
-
-def load_portfolio_context() -> str:
-    db_content = _build_content_from_db()
-    if db_content:
-        return db_content
-
-    if not PORTFOLIO_CONTEXT_PATH.exists():
-        return ""
-
-    return PORTFOLIO_CONTEXT_PATH.read_text(encoding="utf-8").strip()
-
-
-def parse_portfolio_context() -> dict:
-    content = load_portfolio_context()
+def _parse_sections(content: str) -> dict:
     if not content:
         return {}
 
@@ -53,6 +24,38 @@ def parse_portfolio_context() -> dict:
 
     sections[current_section] = "\n".join(buffer).strip()
     return {key: value for key, value in sections.items() if value}
+
+
+def _read_file_content() -> str:
+    if not PORTFOLIO_CONTEXT_PATH.exists():
+        return ""
+
+    return PORTFOLIO_CONTEXT_PATH.read_text(encoding="utf-8").strip()
+
+
+def _build_merged_content() -> str:
+    sections = _parse_sections(_read_file_content())
+
+    for row in EditableContent.objects.order_by("key"):
+        value = row.value
+        rendered = value.strip() if isinstance(value, str) else str(value).strip()
+        if rendered:
+            sections[row.key.lower()] = rendered
+
+    if not sections:
+        return ""
+
+    return "\n\n".join(
+        [f"## {key.title()}\n{value}" for key, value in sections.items() if value]
+    ).strip()
+
+
+def load_portfolio_context() -> str:
+    return _build_merged_content()
+
+
+def parse_portfolio_context() -> dict:
+    return _parse_sections(load_portfolio_context())
 
 
 def extract_project_names() -> list[str]:

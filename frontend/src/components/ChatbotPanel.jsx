@@ -43,17 +43,35 @@ function ChatbotPanel({
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [speakReplies, setSpeakReplies] = useState(false);
+  const [voiceInputSupported, setVoiceInputSupported] = useState(false);
+  const [speechOutputSupported, setSpeechOutputSupported] = useState(false);
   const [followUps, setFollowUps] = useState(SUGGESTED_PROMPTS);
   const [historyOpen, setHistoryOpen] = useState(true);
   const endRef = useRef(null);
   const recognitionRef = useRef(null);
+  const voicesRef = useRef([]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   useEffect(() => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+    const canRecognize =
+      "webkitSpeechRecognition" in window || "SpeechRecognition" in window;
+    const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+
+    setVoiceInputSupported(canRecognize);
+    setSpeechOutputSupported(canSpeak);
+
+    if (canSpeak) {
+      const loadVoices = () => {
+        voicesRef.current = window.speechSynthesis.getVoices();
+      };
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    if (!canRecognize) {
       return undefined;
     }
 
@@ -77,24 +95,63 @@ function ChatbotPanel({
         setError("Microphone permission was blocked. Please allow mic access and try again.");
         return;
       }
+      if (event.error === "no-speech") {
+        setError("No speech was detected. Try speaking a little closer to the mic.");
+        return;
+      }
       setError("Voice input could not start in this browser. Try Chrome or Edge.");
     };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
 
-    return () => recognition.stop();
+    return () => {
+      recognition.stop();
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, [loading, name, sessionId, setError]);
 
-  const triggerSpeechInput = () => {
-    if (!recognitionRef.current) {
+  const speakText = (text) => {
+    if (!text || !speechOutputSupported || !("speechSynthesis" in window)) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const preferredVoice =
+      voicesRef.current.find((voice) => /en/i.test(voice.lang) && voice.default) ||
+      voicesRef.current.find((voice) => /en/i.test(voice.lang)) ||
+      null;
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const triggerSpeechInput = async () => {
+    if (!voiceInputSupported || !recognitionRef.current) {
       setError("Voice input is not supported here. Use Chrome or Edge on localhost/HTTPS.");
       return;
     }
     if (listening || loading) return;
 
-    setError("");
-    setListening(true);
-    recognitionRef.current.start();
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      setError("");
+      setListening(true);
+      recognitionRef.current.start();
+    } catch (microphoneError) {
+      setListening(false);
+      setError("Microphone access was denied or unavailable. Please allow mic access and try again.");
+    }
   };
 
   const submitMessage = async (text) => {
@@ -132,11 +189,10 @@ function ChatbotPanel({
       setFollowUps(response.data.follow_ups || SUGGESTED_PROMPTS);
       await onTrackEvent("button_click", { target: "chat_send" }, nextSessionId);
 
-      if (speakReplies && "speechSynthesis" in window && response.data.reply) {
-        const utterance = new SpeechSynthesisUtterance(response.data.reply);
-        utterance.rate = 1;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+      if (speakReplies && response.data.reply) {
+        window.setTimeout(() => {
+          speakText(response.data.reply);
+        }, 120);
       }
     } catch (chatError) {
       console.error("Failed to send message", chatError);
@@ -172,13 +228,34 @@ function ChatbotPanel({
             <div className="flex shrink-0 items-center gap-2">
               <button
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] transition ${
-                  speakReplies
+                  speakReplies && speechOutputSupported
                     ? "bg-cyan-400 text-slate-950"
                     : "border border-white/10 bg-white/5 text-slate-400"
                 }`}
-                onClick={() => setSpeakReplies((c) => !c)}
+                onClick={() => {
+                  if (!speechOutputSupported) {
+                    setError("Speech playback is not supported in this browser.");
+                    return;
+                  }
+                  setError("");
+                  setSpeakReplies((current) => {
+                    const next = !current;
+                    if (next) {
+                      speakText("Voice replies enabled.");
+                    } else if ("speechSynthesis" in window) {
+                      window.speechSynthesis.cancel();
+                    }
+                    return next;
+                  });
+                }}
                 type="button"
-                title={speakReplies ? "Voice replies on" : "Voice replies off"}
+                title={
+                  speechOutputSupported
+                    ? speakReplies
+                      ? "Voice replies on"
+                      : "Voice replies off"
+                    : "Speech playback unavailable"
+                }
               >
                 <Volume2 size={12} />
               </button>
@@ -226,6 +303,26 @@ function ChatbotPanel({
                   <p className="mt-1.5 max-w-[220px] text-xs leading-5 text-slate-400">
                     Ask for projects, skills, experience, or a quick summary.
                   </p>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] ${
+                        voiceInputSupported
+                          ? "border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+                          : "border border-white/10 bg-white/5 text-slate-500"
+                      }`}
+                    >
+                      Mic {voiceInputSupported ? "ready" : "unavailable"}
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] ${
+                        speechOutputSupported
+                          ? "border border-cyan-400/20 bg-cyan-400/10 text-cyan-100"
+                          : "border border-white/10 bg-white/5 text-slate-500"
+                      }`}
+                    >
+                      Speaker {speechOutputSupported ? "ready" : "unavailable"}
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -380,10 +477,13 @@ function ChatbotPanel({
                 className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition ${
                   listening
                     ? "border-cyan-300 bg-cyan-400/20 text-cyan-200"
-                    : "border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40"
+                    : voiceInputSupported
+                      ? "border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40"
+                      : "border-white/10 bg-white/5 text-slate-500"
                 }`}
                 onClick={triggerSpeechInput}
                 type="button"
+                title={voiceInputSupported ? "Start voice input" : "Voice input unavailable"}
               >
                 <Mic size={15} />
               </button>

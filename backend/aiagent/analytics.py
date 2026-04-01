@@ -74,18 +74,20 @@ def update_session_tags(session, user_message):
     return session.tags
 
 
-def build_admin_analytics_payload():
+def build_admin_analytics_payload(role="admin"):
     last_24h = timezone.now() - timedelta(hours=24)
-    user_sessions = UserSession.objects.filter(role="user")
-    total_users = user_sessions.count()
-    active_last_24h = user_sessions.filter(last_active_at__gte=last_24h).count()
+    visible_roles = ["user", "admin"] if role == "admin" else ["user", "admin", "super_admin"]
+    visible_sessions = UserSession.objects.filter(role__in=visible_roles)
+    total_users = visible_sessions.count()
+    active_last_24h = visible_sessions.filter(last_active_at__gte=last_24h).count()
 
     averages = (
-        user_sessions.annotate(message_total=Count("chat_messages"))
+        visible_sessions.annotate(message_total=Count("chat_messages"))
         .aggregate(avg_messages_per_user=Avg("message_total"))
     )
     common_queries = list(
-        ChatMessage.objects.values("message")
+        ChatMessage.objects.filter(session__role__in=visible_roles)
+        .values("message")
         .annotate(total=Count("id"))
         .order_by("-total", "message")[:5]
     )

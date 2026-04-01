@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
 from rest_framework.exceptions import PermissionDenied
 
 from conversations.models import AdminUser, EditableContent, UserSession
@@ -58,7 +59,7 @@ def get_request_session(request):
 
     try:
         session = UserSession.objects.get(id=session_id)
-    except UserSession.DoesNotExist as exc:
+    except (UserSession.DoesNotExist, ValidationError, ValueError) as exc:
         raise PermissionDenied("Invalid session id") from exc
 
     session.save(update_fields=["last_active_at"])
