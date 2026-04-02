@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { BriefcaseBusiness, Sparkles } from "lucide-react";
 
 function Navbar({
@@ -25,8 +25,8 @@ function Navbar({
             AI Portfolio
           </div>
           <div className="text-sm text-slate-400">
-            Recruiter session: {visitorName || "Guest"}
-            {role ? ` � ${role}` : ""}
+            Welcome, {visitorName || "Guest"}
+            {role ? ` • ${role}` : ""}
           </div>
         </div>
       </div>
@@ -59,4 +59,3 @@ function Navbar({
 }
 
 export default Navbar;
-
