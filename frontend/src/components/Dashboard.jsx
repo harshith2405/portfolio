@@ -11,6 +11,11 @@ const resumeDownloadUrl =
   (typeof window !== "undefined"
     ? `${window.location.origin}/api/portfolio/resume/`
     : "/api/portfolio/resume/");
+const candidateResumeUrl =
+  import.meta.env.VITE_CANDIDATE_RESUME_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api/portfolio/candidate-resume/`
+    : "/api/portfolio/candidate-resume/");
 
 function parseKeyValueLines(sectionText) {
   return Object.fromEntries(
@@ -257,6 +262,7 @@ function Dashboard({
   onSearchInputChange,
   onSelectAdminTab,
   onToggleRecruiterMode,
+  onUploadResume,
   onUpdateAIConfig,
   onUpdateContent,
   portfolio,
@@ -265,7 +271,9 @@ function Dashboard({
   projectsRef,
   role,
   recruiterMode,
+  recruiterSectionRef,
   replayingAdminChat,
+  resumeAsset,
   skillsRef,
   searchQuery,
   searchResults,
@@ -338,8 +346,10 @@ function Dashboard({
           onSearch={onSearchAdmin}
           onSearchInputChange={onSearchInputChange}
           onSelectTab={onSelectAdminTab}
+          onUploadResume={onUploadResume}
           onUpdateContent={onUpdateContent}
           replaying={replayingAdminChat}
+          resumeAsset={resumeAsset}
           role={role}
           searchQuery={searchQuery}
           searchResults={searchResults}
@@ -357,7 +367,10 @@ function Dashboard({
         />
       )}
       {recruiterMode && (
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div
+          className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"
+          ref={recruiterSectionRef}
+        >
           <div className="rounded-[2rem] border border-cyan-400/20 bg-cyan-400/5 p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
               Recruiter Highlights
@@ -392,6 +405,14 @@ function Dashboard({
               Quick Actions
             </p>
             <div className="mt-5 grid gap-3">
+              <a
+                className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/40"
+                href={candidateResumeUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download Candidate Resume
+              </a>
               <a
                 className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/40"
                 href={resumeDownloadUrl}

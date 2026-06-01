@@ -246,3 +246,25 @@ class ProjectInfo(models.Model):
 
     def __str__(self):
         return self.project_name
+
+
+class ResumeAsset(models.Model):
+    file_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100, default="application/pdf")
+    file_data = models.BinaryField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Resume Asset"
+        verbose_name_plural = "Resume Asset"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        return cls.objects.filter(pk=1).first()
+
+    def __str__(self):
+        return self.file_name

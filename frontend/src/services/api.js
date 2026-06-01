@@ -55,6 +55,15 @@ export const addAdmin = async (payload) => api.post("superadmin/add-admin/", pay
 export const removeAdmin = async (adminId) => api.delete(`superadmin/remove-admin/${adminId}/`);
 export const updateContent = async (payload) =>
   api.post("superadmin/update-content/", payload);
+export const uploadResume = async (file) => {
+  const formData = new FormData();
+  formData.append("resume", file);
+  return api.post("superadmin/upload-resume/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
 export const getAIConfig = async () => api.get("superadmin/ai-config/");
 export const updateAIConfig = async (payload) =>

@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Award, Github, Linkedin, Mail, MapPin, SquareCode } from "lucide-react";
 
+const candidateResumeUrl =
+  import.meta.env.VITE_CANDIDATE_RESUME_URL ||
+  (typeof window !== "undefined"
+    ? `${window.location.origin}/api/portfolio/candidate-resume/`
+    : "/api/portfolio/candidate-resume/");
+
 function normalizeUrl(value, fallbackPrefix = "") {
   if (!value) return "";
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -184,6 +190,14 @@ function Hero({ basics, bio, contact, internshipSummary, snapshotContent }) {
                   "Full-stack product builder with AI system design instincts and strong problem-solving fundamentals."}
               </div>
             </div>
+            <a
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/40 hover:text-cyan-100"
+              href={candidateResumeUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Download Candidate Resume
+            </a>
             <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
               Explore with the chatbot
               <ArrowRight size={16} />

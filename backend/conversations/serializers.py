@@ -8,6 +8,7 @@ from .models import (
     EditableContent,
     Message,
     ProjectInfo,
+    ResumeAsset,
     UserEvent,
     UserSession,
 )
@@ -118,3 +119,9 @@ class ProjectInfoSerializer(serializers.ModelSerializer):
             "sort_order",
             "updated_at",
         ]
+
+
+class ResumeAssetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResumeAsset
+        fields = ["file_name", "content_type", "updated_at"]

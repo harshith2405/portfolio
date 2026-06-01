@@ -30,8 +30,10 @@ function AdminConsole({
   onSearch,
   onSearchInputChange,
   onSelectTab,
+  onUploadResume,
   onUpdateContent,
   replaying,
+  resumeAsset,
   role,
   searchQuery,
   searchResults,
@@ -39,6 +41,7 @@ function AdminConsole({
   const isSuperAdmin = role === "super_admin";
   const roleOptions = ["user", "admin", "super_admin"];
   const [visibleRoles, setVisibleRoles] = useState(roleOptions);
+  const [resumeFile, setResumeFile] = useState(null);
 
   const effectiveVisibleRoles = isSuperAdmin ? visibleRoles : ["user", "admin"];
   const orderedContentEntries = useMemo(
@@ -444,6 +447,42 @@ function AdminConsole({
               {contentSaveStatus.message}
             </div>
           ) : null}
+          <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5">
+            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
+              Candidate resume
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Upload the actual resume file that recruiters can download from recruiter mode.
+            </p>
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              {resumeAsset?.file_name ? (
+                <>
+                  <div className="font-medium text-white">{resumeAsset.file_name}</div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
+                    Updated {new Date(resumeAsset.updated_at).toLocaleString()}
+                  </div>
+                </>
+              ) : (
+                <div>No resume uploaded yet.</div>
+              )}
+            </div>
+            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+              <input
+                accept=".pdf,.doc,.docx"
+                className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-xl file:border-0 file:bg-amber-300 file:px-4 file:py-2 file:font-semibold file:text-slate-950"
+                onChange={(event) => setResumeFile(event.target.files?.[0] || null)}
+                type="file"
+              />
+              <button
+                className="rounded-2xl bg-amber-300 px-4 py-3 font-semibold text-slate-950"
+                disabled={loading}
+                onClick={() => onUploadResume(resumeFile)}
+                type="button"
+              >
+                {loading ? "Uploading..." : "Upload Resume"}
+              </button>
+            </div>
+          </div>
           {orderedContentEntries.map(([key, value]) => (
             <div
               className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5"

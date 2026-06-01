@@ -22,6 +22,7 @@ import {
   setAuthSession,
   startSession,
   trackEvent,
+  uploadResume,
   updateAIConfig,
   updateContent,
 } from "../services/api";
@@ -155,6 +156,7 @@ function Home() {
   const replayTimeoutsRef = useRef([]);
   const projectsRef = useRef(null);
   const skillsRef = useRef(null);
+  const recruiterSectionRef = useRef(null);
 
   const buildContentDrafts = (payload) => {
     const nextDrafts = {};
@@ -415,6 +417,12 @@ function Home() {
 
     return () => observer.disconnect();
   }, [sessionId, visitorName]);
+
+  useEffect(() => {
+    if (recruiterMode && recruiterSectionRef.current) {
+      recruiterSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [recruiterMode]);
 
   const sendAnalytics = async (eventType, metadata = {}, conversationId = sessionId) => {
     if (!visitorName) return;
@@ -716,6 +724,36 @@ function Home() {
     }
   };
 
+  const handleUploadResume = async (file) => {
+    if (!file) {
+      setContentSaveStatus({
+        type: "error",
+        message: "Please choose a resume file before uploading.",
+      });
+      return;
+    }
+
+    try {
+      setLoadingAdminTools(true);
+      setContentSaveStatus(null);
+      await uploadResume(file);
+      await loadPortfolio();
+      setContentSaveStatus({
+        type: "success",
+        message: "Resume uploaded successfully.",
+      });
+    } catch (uploadError) {
+      console.error("Failed to upload resume", uploadError);
+      setError("Unable to upload resume right now.");
+      setContentSaveStatus({
+        type: "error",
+        message: "Failed to upload resume.",
+      });
+    } finally {
+      setLoadingAdminTools(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-[1700px] flex-col gap-6 px-4 py-4 lg:flex-row lg:px-6">
@@ -749,6 +787,7 @@ function Home() {
             onSearchInputChange={setSearchQuery}
             onSelectAdminTab={setAdminConsoleTab}
             onToggleRecruiterMode={handleRecruiterModeToggle}
+            onUploadResume={handleUploadResume}
             onUpdateAIConfig={handleUpdateAIConfig}
             onUpdateContent={handleUpdateContent}
             portfolio={portfolio}
@@ -756,7 +795,9 @@ function Home() {
             presence={presence}
             projectsRef={projectsRef}
             recruiterMode={recruiterMode}
+            recruiterSectionRef={recruiterSectionRef}
             replayingAdminChat={replayingAdminChat}
+            resumeAsset={portfolio.resume_asset}
             role={role}
             searchQuery={searchQuery}
             searchResults={searchResults}

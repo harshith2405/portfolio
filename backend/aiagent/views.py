@@ -1,5 +1,6 @@
 import time
 from datetime import timedelta
+from pathlib import Path
 
 from django.db import connection
 from django.http import HttpResponse
@@ -9,6 +10,7 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -36,7 +38,7 @@ from aiagent.context_loader import (
 from aiagent.gemini import GeminiService
 from aiagent.presence import DEFAULT_LOCATIONS
 from aiagent.prompts import build_portfolio_chat_prompt
-from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, ProjectInfo, UserEvent, UserSession
+from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, ProjectInfo, ResumeAsset, UserEvent, UserSession
 from conversations.serializers import (
     AIConfigSerializer,
     AdminUserSerializer,
@@ -45,6 +47,7 @@ from conversations.serializers import (
     EditableContentSerializer,
     MessageSerializer,
     ProjectInfoSerializer,
+    ResumeAssetSerializer,
     UserEventSerializer,
     UserSessionSerializer,
 )
@@ -185,11 +188,13 @@ class StartSessionAPIView(APIView):
 class PortfolioContextAPIView(APIView):
     def get(self, request):
         editable = EditableContentSerializer(EditableContent.objects.order_by("key"), many=True).data
+        resume_asset = ResumeAsset.load()
         return Response(
             {
                 "content": load_portfolio_context(),
                 "sections": parse_portfolio_context(),
                 "editable_content": editable,
+                "resume_asset": ResumeAssetSerializer(resume_asset).data if resume_asset else None,
             },
             status=status.HTTP_200_OK,
         )
@@ -199,6 +204,20 @@ class ResumeDownloadAPIView(APIView):
     def get(self, request):
         response = HttpResponse(load_portfolio_context(), content_type="text/markdown")
         response["Content-Disposition"] = 'attachment; filename="resume_snapshot.md"'
+        return response
+
+
+class CandidateResumeDownloadAPIView(APIView):
+    def get(self, request):
+        resume_asset = ResumeAsset.load()
+        if not resume_asset:
+            return Response({"error": "Resume not uploaded yet"}, status=status.HTTP_404_NOT_FOUND)
+
+        response = HttpResponse(
+            resume_asset.file_data,
+            content_type=resume_asset.content_type or "application/octet-stream",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{resume_asset.file_name}"'
         return response
 
 
@@ -565,6 +584,29 @@ class SuperAdminUpdateContentAPIView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(EditableContentSerializer(content).data, status=status.HTTP_200_OK)
+
+
+class SuperAdminUploadResumeAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        require_roles(request, {"super_admin"})
+        uploaded_file = request.FILES.get("resume")
+
+        if not uploaded_file:
+            return Response(
+                {"error": "resume file is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        file_name = Path(uploaded_file.name).name
+        resume_asset = ResumeAsset(
+            file_name=file_name,
+            content_type=uploaded_file.content_type or "application/octet-stream",
+            file_data=uploaded_file.read(),
+        )
+        resume_asset.save()
+        return Response(ResumeAssetSerializer(resume_asset).data, status=status.HTTP_200_OK)
 
 
 class SuperAdminUpsertProjectInfoAPIView(APIView):
