@@ -83,7 +83,7 @@ function getLinkIcon(label) {
   return null;
 }
 
-function Hero({ basics, bio, contact, internshipSummary, snapshotContent }) {
+function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snapshotContent }) {
   const snapshot = parseSnapshotContent(snapshotContent);
 
   return (
@@ -193,6 +193,7 @@ function Hero({ basics, bio, contact, internshipSummary, snapshotContent }) {
             <a
               className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/40 hover:text-cyan-100"
               href={candidateResumeUrl}
+              onClick={onResumeDownload}
               rel="noreferrer"
               target="_blank"
             >

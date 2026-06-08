@@ -123,6 +123,7 @@ function Home() {
   });
   const [recruiterMode, setRecruiterMode] = useState(false);
   const [booting, setBooting] = useState(false);
+  const [wakeHint, setWakeHint] = useState(false);
   const [loadingAdminTools, setLoadingAdminTools] = useState(false);
   const [adminConsoleTab, setAdminConsoleTab] = useState("sessions");
   const [adminAnalytics, setAdminAnalytics] = useState({
@@ -309,6 +310,16 @@ function Home() {
   useEffect(() => {
     setAuthSession(authSessionId);
   }, [authSessionId]);
+
+  useEffect(() => {
+    if (!booting) {
+      setWakeHint(false);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setWakeHint(true), 3500);
+    return () => window.clearTimeout(timeoutId);
+  }, [booting]);
 
   useEffect(() => {
     if (role === "admin" || role === "super_admin") {
@@ -515,7 +526,7 @@ function Home() {
       setError(
         requirePassword
           ? "Unable to log in with that password."
-          : "Unable to start your session right now."
+          : "The backend may still be waking up. Please try once more in a moment."
       );
     }
   };
@@ -786,6 +797,7 @@ function Home() {
             onSearchAdmin={handleSearchAdmin}
             onSearchInputChange={setSearchQuery}
             onSelectAdminTab={setAdminConsoleTab}
+            onTrackEvent={sendAnalytics}
             onToggleRecruiterMode={handleRecruiterModeToggle}
             onUploadResume={handleUploadResume}
             onUpdateAIConfig={handleUpdateAIConfig}
@@ -841,6 +853,11 @@ function Home() {
             <p className="mt-3 text-sm leading-6 text-slate-400">
               Recruiters continue normally. Registered admins are asked for a password.
             </p>
+            {wakeHint ? (
+              <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+                Waking backend... Render free hosting can take a little time after inactivity.
+              </div>
+            ) : null}
 
             <form className="mt-6 space-y-4" onSubmit={handleNameSubmit}>
               <input
@@ -869,7 +886,7 @@ function Home() {
                 disabled={booting}
                 type="submit"
               >
-                {booting ? "Starting..." : requirePassword ? "Log In" : "Continue"}
+                {booting ? (wakeHint ? "Waking backend..." : "Starting...") : requirePassword ? "Log In" : "Continue"}
               </button>
             </form>
           </div>

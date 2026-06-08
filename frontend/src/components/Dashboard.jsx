@@ -261,6 +261,7 @@ function Dashboard({
   onSearchAdmin,
   onSearchInputChange,
   onSelectAdminTab,
+  onTrackEvent,
   onToggleRecruiterMode,
   onUploadResume,
   onUpdateAIConfig,
@@ -310,6 +311,9 @@ function Dashboard({
         bio={sections["short bio"]}
         contact={contact}
         internshipSummary={internshipSummary}
+        onResumeDownload={() =>
+          onTrackEvent?.("button_click", { target: "candidate_resume_download" })
+        }
         snapshotContent={snapshotContent}
       />
       <Projects
@@ -408,6 +412,9 @@ function Dashboard({
               <a
                 className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/40"
                 href={candidateResumeUrl}
+                onClick={() =>
+                  onTrackEvent?.("button_click", { target: "candidate_resume_download" })
+                }
                 target="_blank"
                 rel="noreferrer"
               >
@@ -416,6 +423,9 @@ function Dashboard({
               <a
                 className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/40"
                 href={resumeDownloadUrl}
+                onClick={() =>
+                  onTrackEvent?.("button_click", { target: "resume_snapshot_download" })
+                }
                 target="_blank"
                 rel="noreferrer"
               >

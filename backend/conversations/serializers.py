@@ -7,6 +7,7 @@ from .models import (
     Conversation,
     EditableContent,
     Message,
+    PortfolioEvent,
     ProjectInfo,
     ResumeAsset,
     UserEvent,
@@ -52,6 +53,8 @@ class MessageSerializer(serializers.ModelSerializer):
 class UserSessionSerializer(serializers.ModelSerializer):
     conversation_count = serializers.SerializerMethodField()
     message_count = serializers.SerializerMethodField()
+    lead_score = serializers.SerializerMethodField()
+    lead_status = serializers.SerializerMethodField()
 
     class Meta:
         model = UserSession
@@ -64,6 +67,8 @@ class UserSessionSerializer(serializers.ModelSerializer):
             "last_active_at",
             "conversation_count",
             "message_count",
+            "lead_score",
+            "lead_status",
         ]
 
     def get_conversation_count(self, obj):
@@ -71,6 +76,55 @@ class UserSessionSerializer(serializers.ModelSerializer):
 
     def get_message_count(self, obj):
         return obj.chat_messages.count()
+
+    def _calculate_lead_score(self, obj):
+        user_messages = " ".join(
+            obj.chat_messages.values_list("message", flat=True)
+        ).lower()
+        portfolio_events = PortfolioEvent.objects.filter(conversation__session=obj)
+        journey_events = obj.journey_events.all()
+
+        opened_resume = portfolio_events.filter(
+            event_type="button_click",
+            metadata__target__in=[
+                "candidate_resume_download",
+                "resume_snapshot_download",
+            ],
+        ).exists()
+        asked_hiring_question = any(
+            keyword in user_messages
+            for keyword in [
+                "hire",
+                "recruit",
+                "resume",
+                "job",
+                "role",
+                "interview",
+                "why should",
+            ]
+        )
+        viewed_projects = journey_events.filter(event_type="viewed_projects").exists()
+
+        score = 0
+        if opened_resume:
+            score += 40
+        if asked_hiring_question:
+            score += 35
+        if viewed_projects:
+            score += 25
+
+        return min(score, 100)
+
+    def get_lead_score(self, obj):
+        return self._calculate_lead_score(obj)
+
+    def get_lead_status(self, obj):
+        score = self._calculate_lead_score(obj)
+        if score >= 70:
+            return "high interest"
+        if score >= 35:
+            return "warm"
+        return "new"
 
 
 class AdminUserSerializer(serializers.ModelSerializer):

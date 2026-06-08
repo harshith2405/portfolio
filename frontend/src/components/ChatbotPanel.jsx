@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, History, Mic, PanelLeftClose, PanelLeft, SendHorizonal, Sparkles, Volume2 } from "lucide-react";
+import { BookOpen, Bot, History, Mic, PanelLeftClose, PanelLeft, SendHorizonal, Sparkles, Volume2 } from "lucide-react";
 
 import { getHistory, sendMessage } from "../services/api";
 
@@ -47,6 +47,7 @@ function ChatbotPanel({
   const [speechOutputSupported, setSpeechOutputSupported] = useState(false);
   const [followUps, setFollowUps] = useState(SUGGESTED_PROMPTS);
   const [historyOpen, setHistoryOpen] = useState(true);
+  const [openEvidenceIds, setOpenEvidenceIds] = useState([]);
   const endRef = useRef(null);
   const recognitionRef = useRef(null);
   const voicesRef = useRef([]);
@@ -210,6 +211,14 @@ function ChatbotPanel({
     ? [...new Set([...followUps, ...SUGGESTED_PROMPTS])].slice(0, 2)
     : SUGGESTED_PROMPTS.slice(0, 2);
 
+  const toggleEvidence = (messageId) => {
+    setOpenEvidenceIds((current) =>
+      current.includes(messageId)
+        ? current.filter((id) => id !== messageId)
+        : [...current, messageId]
+    );
+  };
+
   return (
     <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
       <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl">
@@ -329,6 +338,8 @@ function ChatbotPanel({
                   <AnimatePresence initial={false}>
                     {messages.map((message) => {
                       const isUser = message.role === "user";
+                      const evidence = message.content?.evidence || [];
+                      const evidenceOpen = openEvidenceIds.includes(message.id);
 
                       return (
                         <motion.div
@@ -351,6 +362,32 @@ function ChatbotPanel({
                             <p className="whitespace-pre-wrap text-sm leading-6">
                               {message.content?.text}
                             </p>
+                            {!isUser && evidence.length ? (
+                              <div className="mt-3">
+                                <button
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-400/40"
+                                  onClick={() => toggleEvidence(message.id)}
+                                  type="button"
+                                >
+                                  <BookOpen size={12} />
+                                  {evidenceOpen ? "Hide source" : "Show source"}
+                                </button>
+                                {evidenceOpen ? (
+                                  <div className="mt-2 space-y-2 rounded-xl border border-cyan-400/15 bg-cyan-400/5 p-3">
+                                    {evidence.map((source) => (
+                                      <div key={`${message.id}-${source.label}`}>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                                          {source.label}
+                                        </div>
+                                        <div className="mt-1 text-xs leading-5 text-slate-300">
+                                          {source.snippet}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
                           </div>
                         </motion.div>
                       );

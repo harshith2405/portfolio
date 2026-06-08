@@ -11,6 +11,22 @@ function MetricCard({ label, value, caption }) {
   );
 }
 
+function LeadBadge({ score = 0, status = "new" }) {
+  const isHigh = status === "high interest";
+  const isWarm = status === "warm";
+  const classes = isHigh
+    ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"
+    : isWarm
+      ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
+      : "border-white/10 bg-white/5 text-slate-300";
+
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${classes}`}>
+      {status} · {score}
+    </span>
+  );
+}
+
 function AdminConsole({
   activeTab,
   adminAnalytics,
@@ -224,6 +240,9 @@ function AdminConsole({
                       <div className="mt-1 text-xs text-slate-400">
                         Tags: {(session.tags || []).join(", ") || "No tags"}
                       </div>
+                      <div className="mt-2">
+                        <LeadBadge score={session.lead_score} status={session.lead_status} />
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -240,6 +259,9 @@ function AdminConsole({
                         {entry.session_role}
                       </div>
                       <div className="mt-1 text-sm text-slate-300">{entry.message}</div>
+                      <div className="mt-2">
+                        <LeadBadge score={entry.lead_score} status={entry.lead_status} />
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -255,7 +277,7 @@ function AdminConsole({
                 </div>
                 {renderRoleToggles()}
               </div>
-              <div className="space-y-3">
+              <div className="max-h-[420px] space-y-3 overflow-y-auto pr-2">
                 {filteredSessions.map((session) => (
                   <button
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-amber-300/40"
@@ -270,6 +292,7 @@ function AdminConsole({
                           {session.role}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2">
+                          <LeadBadge score={session.lead_score} status={session.lead_status} />
                           {(session.tags || []).map((tag) => (
                             <span
                               className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-[11px] text-amber-100"

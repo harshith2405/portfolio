@@ -90,6 +90,44 @@ def infer_project_focus(text: str) -> str | None:
     return None
 
 
+def build_evidence_sources(user_message: str, focus_project: str | None = None) -> list[dict]:
+    sections = parse_portfolio_context()
+    normalized = (user_message or "").lower()
+    source_keys = []
+
+    if focus_project or "project" in normalized:
+        source_keys.append("projects")
+    if any(keyword in normalized for keyword in ["skill", "stack", "tech", "dsa"]):
+        source_keys.append("skills")
+    if any(keyword in normalized for keyword in ["intern", "experience"]):
+        source_keys.append("internships")
+    if any(keyword in normalized for keyword in ["hire", "why", "strength", "achievement"]):
+        source_keys.extend(["resume highlights", "candidate basics"])
+
+    if not source_keys:
+        source_keys.extend(["candidate basics", "short bio"])
+
+    evidence = []
+    seen = set()
+    for key in source_keys:
+        if key in seen:
+            continue
+        seen.add(key)
+        section_text = sections.get(key, "")
+        if not section_text:
+            continue
+        snippet = " ".join(
+            line.strip().lstrip("- ").strip()
+            for line in section_text.splitlines()
+            if line.strip()
+        )[:260]
+        evidence.append({"label": key.title(), "snippet": snippet})
+        if len(evidence) >= 3:
+            break
+
+    return evidence
+
+
 class StartSessionAPIView(APIView):
     def post(self, request):
         ensure_super_admin_exists()
@@ -373,11 +411,12 @@ class ChatAPIView(APIView):
         action = infer_action(user_message)
         focus_project = infer_project_focus(f"{user_message}\n{reply}")
         suggestions = infer_follow_ups(user_message)
+        evidence = build_evidence_sources(user_message, focus_project)
 
         ConversationService.save_message(
             conversation=conversation,
             role="assistant",
-            content={"text": reply},
+            content={"text": reply, "evidence": evidence},
         )
         if request_session:
             ChatMessage.objects.create(
@@ -415,6 +454,7 @@ class ChatAPIView(APIView):
                 "action": action,
                 "follow_ups": suggestions,
                 "focus_project": focus_project,
+                "evidence": evidence,
             },
             status=status.HTTP_200_OK,
         )
@@ -488,6 +528,8 @@ class AdminSearchAPIView(APIView):
                         "session_id": str(item.session_id),
                         "session_name": item.session.name,
                         "session_role": item.session.role,
+                        "lead_score": UserSessionSerializer(item.session).data["lead_score"],
+                        "lead_status": UserSessionSerializer(item.session).data["lead_status"],
                         "message": item.message,
                         "response": item.response,
                         "timestamp": item.timestamp,
