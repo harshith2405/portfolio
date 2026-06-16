@@ -21,6 +21,7 @@ import {
   searchAdminData,
   setAuthSession,
   startSession,
+  submitRecruiterFollowUp,
   trackEvent,
   uploadResume,
   updateAIConfig,
@@ -31,6 +32,7 @@ const LOCATION_KEY = "portfolio_mock_location";
 const ACTIVE_TABS_KEY = "portfolio_active_tabs";
 const MOCK_LOCATIONS = ["Hyderabad", "Bengaluru", "Pune", "Chennai", "Mumbai"];
 const PRESENCE_TTL_MS = 20000;
+const DEFAULT_ROLE_FIT = "full_stack";
 
 function getWebSocketBaseUrl() {
   if (typeof window === "undefined") {
@@ -98,6 +100,16 @@ function buildDefaultSnapshotDraft(sections) {
     .join("\n");
 }
 
+function buildWelcomeMessage(name) {
+  return {
+    id: `welcome-${Date.now()}`,
+    role: "assistant",
+    content: {
+      text: `Hi ${name}, welcome to chat with me. I can walk you through my skills, projects, internship experience, and why I am a strong fit for the role.`,
+    },
+  };
+}
+
 function Home() {
   const [visitorName, setVisitorName] = useState("");
   const [draftName, setDraftName] = useState("");
@@ -122,6 +134,7 @@ function Home() {
     most_viewed_project: "No data yet",
   });
   const [recruiterMode, setRecruiterMode] = useState(false);
+  const [roleFit, setRoleFit] = useState(DEFAULT_ROLE_FIT);
   const [booting, setBooting] = useState(false);
   const [wakeHint, setWakeHint] = useState(false);
   const [loadingAdminTools, setLoadingAdminTools] = useState(false);
@@ -497,7 +510,9 @@ function Home() {
       setRole(nextRole);
       setVisitorName(name);
       setSessionId(nextConversationId);
-      setMessages(response.data.history || []);
+      setMessages(
+        response.data.history?.length ? response.data.history : [buildWelcomeMessage(name)]
+      );
       setConversations(response.data.conversations || []);
       setFocusedProject("");
       setShowNameModal(false);
@@ -538,7 +553,7 @@ function Home() {
       const response = await createConversation(visitorName);
       const nextConversationId = String(response.data.id);
       setSessionId(nextConversationId);
-      setMessages([]);
+      setMessages([buildWelcomeMessage(visitorName)]);
       setConversations((current) => [response.data, ...current]);
       setFocusedProject("");
       void sendAnalytics("button_click", { target: "new_chat" }, nextConversationId);
@@ -603,6 +618,11 @@ function Home() {
     const nextValue = !recruiterMode;
     setRecruiterMode(nextValue);
     void sendAnalytics("recruiter_mode_toggle", { enabled: nextValue });
+  };
+
+  const handleRoleFitChange = (nextRoleFit) => {
+    setRoleFit(nextRoleFit);
+    void sendAnalytics("button_click", { target: "role_fit_change", role_fit: nextRoleFit });
   };
 
   const handleLoadAdminHistory = async (targetSessionId) => {
@@ -765,6 +785,15 @@ function Home() {
     }
   };
 
+  const handleRecruiterFollowUp = async (payload) => {
+    await submitRecruiterFollowUp({
+      ...payload,
+      conversation_id: sessionId || null,
+      role_interest: payload.role_interest || roleFit,
+    });
+    await sendAnalytics("button_click", { target: "follow_up_submit" });
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-[1700px] flex-col gap-6 px-4 py-4 lg:flex-row lg:px-6">
@@ -793,6 +822,7 @@ function Home() {
             onRefreshHealth={handleRefreshHealth}
             onReplayChat={handleReplayChat}
             onRemoveAdmin={handleRemoveAdmin}
+            onRoleFitChange={handleRoleFitChange}
             onResetVisitor={handleVisitorReset}
             onSearchAdmin={handleSearchAdmin}
             onSearchInputChange={setSearchQuery}
@@ -806,6 +836,7 @@ function Home() {
             projectInfo={projectInfo}
             presence={presence}
             projectsRef={projectsRef}
+            roleFit={roleFit}
             recruiterMode={recruiterMode}
             recruiterSectionRef={recruiterSectionRef}
             replayingAdminChat={replayingAdminChat}
@@ -827,6 +858,7 @@ function Home() {
             messages={messages}
             name={visitorName}
             onAction={handleAction}
+            onFollowUpSubmit={handleRecruiterFollowUp}
             onNewChat={handleNewChat}
             onSelectConversation={handleSelectConversation}
             onFocusProject={setFocusedProject}
@@ -834,6 +866,7 @@ function Home() {
             onUpdateMessages={setMessages}
             onUpdateSession={setSessionId}
             onTrackEvent={sendAnalytics}
+            roleFit={roleFit}
             recruiterMode={recruiterMode}
             sessionId={sessionId}
             setError={setError}

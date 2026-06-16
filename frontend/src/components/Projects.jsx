@@ -13,6 +13,51 @@ function normalizeProjectKey(name) {
     .replace(/^-+|-+$/g, "");
 }
 
+const PROJECT_ROLE_FIT_MATCHERS = {
+  backend: ["django", "fastapi", "api", "postgres", "backend", "sql"],
+  full_stack: [],
+  ai: ["ai", "llm", "chatbot", "retrieval", "opencv", "tensorflow", "gemini", "summary"],
+};
+
+const DEFAULT_ARCHITECTURE = {
+  "ai-chatbot-with-memory": [
+    { label: "Frontend", detail: "React recruiter-facing chat widget with session-aware conversation history." },
+    { label: "Backend", detail: "Django REST + prompt orchestration layer that prepares context and routes model calls." },
+    { label: "Data", detail: "PostgreSQL for sessions and messages, plus structured portfolio context and project detail storage." },
+    { label: "AI Flow", detail: "Gemini primary model with OpenRouter fallbacks, short-term memory, fixed context, and evidence-aware replies." },
+  ],
+  "anomaly-detection-system": [
+    { label: "Video Input", detail: "Frames are streamed from the source feed and prepared with OpenCV preprocessing." },
+    { label: "Model Layer", detail: "A trained anomaly detection model evaluates frame patterns for suspicious behavior." },
+    { label: "Backend Logic", detail: "Detection results are filtered into actionable alerts instead of raw frame noise." },
+    { label: "Notification Path", detail: "Alert events trigger downstream messaging or operator response flows." },
+  ],
+  "employee-summary-generator": [
+    { label: "API Layer", detail: "FastAPI endpoint receives structured employee data and validates request shape." },
+    { label: "Transformation", detail: "Input records are normalized into a summary-friendly prompt structure." },
+    { label: "LLM Step", detail: "The summarization model converts structured data into clear natural-language output." },
+    { label: "Response", detail: "A concise summary is returned through the API for direct use in products or dashboards." },
+  ],
+  "interview-ai": [
+    { label: "Frontend", detail: "Next.js guided interface keeps the interview flow structured and easy to navigate." },
+    { label: "Backend", detail: "Server-side logic controls question flow, answer capture, and session progression." },
+    { label: "Persistence", detail: "Interview state and user progress are stored so sessions can stay consistent." },
+    { label: "AI Layer", detail: "The model tailors interview responses and follow-up prompts to the ongoing session." },
+  ],
+  "code-collaboration-platform": [
+    { label: "Client", detail: "Collaborative editor UI manages active files, room state, and user presence." },
+    { label: "Realtime Layer", detail: "WebSocket-style sync keeps code changes aligned across participants." },
+    { label: "Session Logic", detail: "Backend session management coordinates rooms and participant lifecycle." },
+    { label: "Persistence", detail: "Saved code and collaboration metadata support continuity beyond a live room." },
+  ],
+  "finance-advisor": [
+    { label: "Input Layer", detail: "User financial questions or records are captured through a guided advisory interface." },
+    { label: "Advisory Logic", detail: "Backend prompt shaping turns raw inputs into focused financial analysis tasks." },
+    { label: "Model Layer", detail: "The LLM produces advice summaries with an emphasis on readable recommendations." },
+    { label: "Presentation", detail: "Results are returned in a structured format suitable for dashboards or reports." },
+  ],
+};
+
 function findProjectDetail(project, projectInfo) {
   if (!project) return null;
 
@@ -49,12 +94,38 @@ function DetailList({ items, label }) {
   );
 }
 
+function ArchitectureView({ items }) {
+  if (!items?.length) return null;
+
+  return (
+    <div className="mt-4 rounded-[1.1rem] border border-white/10 bg-white/5 p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
+        Architecture
+      </div>
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        {items.map((item) => (
+          <div
+            className="rounded-[1rem] border border-white/10 bg-slate-950/60 p-4"
+            key={`${item.label}-${item.detail}`}
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {item.label}
+            </div>
+            <div className="mt-2 text-sm leading-6 text-slate-300">{item.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Projects({
   focusedProject,
   highlight,
   onProjectClick,
   projectInfo,
   projects,
+  roleFit,
   sectionRef,
 }) {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -71,6 +142,18 @@ function Projects({
     () => findProjectDetail(activeProject, projectInfo),
     [activeProject, projectInfo]
   );
+  const architectureItems = useMemo(() => {
+    if (!activeProject) return [];
+    return activeProjectDetail?.architecture?.length
+      ? activeProjectDetail.architecture
+      : DEFAULT_ARCHITECTURE[normalizeProjectKey(activeProject.name)] || [];
+  }, [activeProject, activeProjectDetail]);
+
+  const isRoleFitMatch = (project) => {
+    if (!project || roleFit === "full_stack") return false;
+    const normalized = `${project.name} ${project.stack || ""} ${project.description || ""}`.toLowerCase();
+    return PROJECT_ROLE_FIT_MATCHERS[roleFit]?.some((keyword) => normalized.includes(keyword));
+  };
 
   useEffect(() => {
     if (!focusedProject) return;
@@ -156,6 +239,8 @@ function Projects({
                   className={`cursor-pointer rounded-[1.5rem] border p-6 transition-all duration-300 ${
                     isActive
                       ? "border-cyan-300 bg-cyan-400/10 shadow-[0_0_55px_rgba(34,211,238,0.25)]"
+                      : isRoleFitMatch(project)
+                        ? "border-cyan-300/35 bg-cyan-400/10"
                       : focusedProject
                         ? "border-white/5 bg-slate-950/30 opacity-55"
                         : "border-white/10 bg-slate-950/60"
@@ -282,6 +367,8 @@ function Projects({
                       label="Constraints / Trade-offs"
                     />
                   </div>
+
+                  <ArchitectureView items={architectureItems} />
 
                   {activeProjectDetail?.outcome && (
                     <div className="mt-4 rounded-[1.1rem] border border-cyan-400/15 bg-cyan-400/5 p-4">

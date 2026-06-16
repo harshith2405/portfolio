@@ -268,3 +268,32 @@ class ResumeAsset(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class RecruiterFollowUp(models.Model):
+    session = models.ForeignKey(
+        UserSession,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="follow_up_requests",
+    )
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="follow_up_requests",
+    )
+    recruiter_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    company = models.CharField(max_length=255, blank=True)
+    role_interest = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.recruiter_name} ({self.email})"

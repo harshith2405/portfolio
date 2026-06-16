@@ -9,6 +9,7 @@ from .models import (
     Message,
     PortfolioEvent,
     ProjectInfo,
+    RecruiterFollowUp,
     ResumeAsset,
     UserEvent,
     UserSession,
@@ -104,6 +105,10 @@ class UserSessionSerializer(serializers.ModelSerializer):
             ]
         )
         viewed_projects = journey_events.filter(event_type="viewed_projects").exists()
+        requested_follow_up = portfolio_events.filter(
+            event_type="button_click",
+            metadata__target="follow_up_submit",
+        ).exists()
 
         score = 0
         if opened_resume:
@@ -112,6 +117,8 @@ class UserSessionSerializer(serializers.ModelSerializer):
             score += 35
         if viewed_projects:
             score += 25
+        if requested_follow_up:
+            score += 45
 
         return min(score, 100)
 
@@ -179,3 +186,17 @@ class ResumeAssetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResumeAsset
         fields = ["file_name", "content_type", "updated_at"]
+
+
+class RecruiterFollowUpSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecruiterFollowUp
+        fields = [
+            "id",
+            "recruiter_name",
+            "email",
+            "company",
+            "role_interest",
+            "notes",
+            "created_at",
+        ]

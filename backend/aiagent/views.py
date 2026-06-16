@@ -38,7 +38,7 @@ from aiagent.context_loader import (
 from aiagent.gemini import GeminiService
 from aiagent.presence import DEFAULT_LOCATIONS
 from aiagent.prompts import build_portfolio_chat_prompt
-from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, ProjectInfo, ResumeAsset, UserEvent, UserSession
+from conversations.models import AIConfig, AdminUser, ChatMessage, Conversation, EditableContent, Message, PortfolioEvent, ProjectInfo, RecruiterFollowUp, ResumeAsset, UserEvent, UserSession
 from conversations.serializers import (
     AIConfigSerializer,
     AdminUserSerializer,
@@ -47,6 +47,7 @@ from conversations.serializers import (
     EditableContentSerializer,
     MessageSerializer,
     ProjectInfoSerializer,
+    RecruiterFollowUpSerializer,
     ResumeAssetSerializer,
     UserEventSerializer,
     UserSessionSerializer,
@@ -88,6 +89,13 @@ def infer_project_focus(text: str) -> str | None:
         if project_name.lower() in normalized:
             return project_name
     return None
+
+
+ROLE_FIT_INSTRUCTIONS = {
+    "backend": "Prioritize backend APIs, databases, performance, service design, and reliability decisions.",
+    "full_stack": "Balance frontend and backend equally, showing how end-to-end features were delivered across the stack.",
+    "ai": "Prioritize AI integration, retrieval, prompting, model trade-offs, evaluation, and data flow around intelligent features.",
+}
 
 
 def build_evidence_sources(user_message: str, focus_project: str | None = None) -> list[dict]:
@@ -347,6 +355,7 @@ class ChatAPIView(APIView):
         user_message = request.data.get("message")
         conversation_id = request.data.get("conversation_id")
         visitor_name = request.data.get("name")
+        role_fit = (request.data.get("role_fit") or "").strip().lower()
         request_session = None
 
         try:
@@ -402,6 +411,7 @@ class ChatAPIView(APIView):
                 ai_config.response_length,
                 length_instructions["medium"],
             ),
+            role_fit_instruction=ROLE_FIT_INSTRUCTIONS.get(role_fit, ""),
             fixed_context=fixed_context,
             recent_messages=recent_messages,
         )
@@ -458,6 +468,51 @@ class ChatAPIView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class RecruiterFollowUpAPIView(APIView):
+    def post(self, request):
+        recruiter_name = (request.data.get("recruiter_name") or "").strip()
+        email = (request.data.get("email") or "").strip()
+        company = (request.data.get("company") or "").strip()
+        role_interest = (request.data.get("role_interest") or "").strip()
+        notes = (request.data.get("notes") or "").strip()
+        conversation_id = request.data.get("conversation_id")
+        request_session = None
+        conversation = None
+
+        if not recruiter_name or not email:
+            return Response(
+                {"error": "recruiter_name and email are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            request_session = get_request_session(request)
+        except PermissionDenied:
+            request_session = None
+
+        if conversation_id:
+            conversation = Conversation.objects.filter(id=conversation_id).first()
+
+        follow_up = RecruiterFollowUp.objects.create(
+            session=request_session,
+            conversation=conversation,
+            recruiter_name=recruiter_name,
+            email=email,
+            company=company,
+            role_interest=role_interest,
+            notes=notes,
+        )
+        if conversation:
+            record_portfolio_event(
+                event_type="button_click",
+                visitor_name=conversation.visitor_name,
+                conversation=conversation,
+                metadata={"target": "follow_up_submit", "role_interest": role_interest},
+            )
+
+        return Response(RecruiterFollowUpSerializer(follow_up).data, status=status.HTTP_201_CREATED)
 
 
 class AdminSessionsAPIView(APIView):

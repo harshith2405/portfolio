@@ -1,8 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-function Skills({ highlight, sectionRef, skillGroups, strengths }) {
+const ROLE_FIT_MATCHERS = {
+  backend: ["backend", "python", "java", "django", "fastapi", "api", "postgresql", "sql"],
+  full_stack: [],
+  ai: ["ai", "llm", "prompt", "retrieval", "ml", "opencv", "tensorflow", "gemini"],
+};
+
+function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
   const [selectedSkill, setSelectedSkill] = useState("");
+
+  const isRoleFitMatch = (text) => {
+    if (!text || roleFit === "full_stack") return false;
+    const normalized = text.toLowerCase();
+    return ROLE_FIT_MATCHERS[roleFit]?.some((keyword) => normalized.includes(keyword));
+  };
 
   return (
     <section className="scroll-mt-24" data-section="skills" ref={sectionRef}>
@@ -38,6 +50,8 @@ function Skills({ highlight, sectionRef, skillGroups, strengths }) {
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       selectedSkill === item
                         ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-100"
+                        : isRoleFitMatch(`${group.label} ${item}`)
+                          ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-100"
                         : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
                     }`}
                     key={item}
@@ -64,6 +78,8 @@ function Skills({ highlight, sectionRef, skillGroups, strengths }) {
                     className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                       selectedSkill === item
                         ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-50"
+                        : isRoleFitMatch(item)
+                          ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-100"
                         : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
                     }`}
                     onClick={() => setSelectedSkill(item)}

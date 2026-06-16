@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Bot, History, Mic, PanelLeftClose, PanelLeft, SendHorizonal, Sparkles, Volume2 } from "lucide-react";
+import { BookOpen, Bot, History, MailPlus, Mic, PanelLeftClose, PanelLeft, SendHorizonal, Sparkles, Volume2 } from "lucide-react";
 
 import { getHistory, sendMessage } from "../services/api";
 
 const SUGGESTED_PROMPTS = ["Why hire me?", "Show my projects", "What are my skills?"];
+const ASSISTANT_NAME = "Harshith";
+const ROLE_FIT_PROMPTS = {
+  backend: ["Show your backend work", "How do you design APIs?", "Tell me about database decisions"],
+  full_stack: ["How do you work end-to-end?", "Show your best full-stack project", "How do you balance frontend and backend?"],
+  ai: ["Show your AI work", "Explain your chatbot architecture", "How do you handle model trade-offs?"],
+};
 
 function TypingIndicator() {
   return (
@@ -28,6 +34,7 @@ function ChatbotPanel({
   messages,
   name,
   onAction,
+  onFollowUpSubmit,
   onFocusProject,
   onNewChat,
   onSelectConversation,
@@ -35,6 +42,7 @@ function ChatbotPanel({
   onUpdateConversations,
   onUpdateMessages,
   onUpdateSession,
+  roleFit,
   recruiterMode,
   sessionId,
   setError,
@@ -48,6 +56,16 @@ function ChatbotPanel({
   const [followUps, setFollowUps] = useState(SUGGESTED_PROMPTS);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [openEvidenceIds, setOpenEvidenceIds] = useState([]);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [followUpState, setFollowUpState] = useState({
+    recruiter_name: name || "",
+    email: "",
+    company: "",
+    role_interest: roleFit || "full_stack",
+    notes: "",
+  });
+  const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
+  const [followUpMessage, setFollowUpMessage] = useState("");
   const endRef = useRef(null);
   const recognitionRef = useRef(null);
   const voicesRef = useRef([]);
@@ -55,6 +73,14 @@ function ChatbotPanel({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    setFollowUpState((current) => ({
+      ...current,
+      recruiter_name: current.recruiter_name || name || "",
+      role_interest: roleFit || current.role_interest,
+    }));
+  }, [name, roleFit]);
 
   useEffect(() => {
     const canRecognize =
@@ -171,7 +197,7 @@ function ChatbotPanel({
 
     try {
       const [response] = await Promise.all([
-        sendMessage(sessionId, text, name),
+        sendMessage(sessionId, text, name, roleFit),
         new Promise((resolve) => window.setTimeout(resolve, 850)),
       ]);
       const nextSessionId = String(response.data.session_id || response.data.conversation_id);
@@ -207,9 +233,13 @@ function ChatbotPanel({
   };
 
   const hasMessages = messages.length > 0;
+  const roleSuggestions = useMemo(
+    () => ROLE_FIT_PROMPTS[roleFit] || ROLE_FIT_PROMPTS.full_stack,
+    [roleFit]
+  );
   const mergedSuggestions = hasMessages
-    ? [...new Set([...followUps, ...SUGGESTED_PROMPTS])].slice(0, 2)
-    : SUGGESTED_PROMPTS.slice(0, 2);
+    ? [...new Set([...followUps, ...roleSuggestions])].slice(0, 2)
+    : roleSuggestions.slice(0, 2);
 
   const toggleEvidence = (messageId) => {
     setOpenEvidenceIds((current) =>
@@ -217,6 +247,34 @@ function ChatbotPanel({
         ? current.filter((id) => id !== messageId)
         : [...current, messageId]
     );
+  };
+
+  const handleFollowUpChange = (field, value) => {
+    setFollowUpMessage("");
+    setFollowUpState((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleFollowUpSubmit = async (event) => {
+    event.preventDefault();
+    if (!followUpState.recruiter_name.trim() || !followUpState.email.trim()) {
+      setFollowUpMessage("Name and email are required.");
+      return;
+    }
+
+    try {
+      setFollowUpSubmitting(true);
+      await onFollowUpSubmit({
+        ...followUpState,
+        role_interest: followUpState.role_interest || roleFit,
+      });
+      setFollowUpMessage("Follow-up request sent successfully.");
+      setFollowUpOpen(false);
+    } catch (submitError) {
+      console.error("Failed to submit recruiter follow-up", submitError);
+      setFollowUpMessage("Could not send the follow-up request right now.");
+    } finally {
+      setFollowUpSubmitting(false);
+    }
   };
 
   return (
@@ -357,7 +415,7 @@ function ChatbotPanel({
                           >
                             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
                               {isUser ? <Sparkles size={11} /> : <Bot size={11} />}
-                              {isUser ? name : "Assistant"}
+                              {isUser ? name : ASSISTANT_NAME}
                             </div>
                             <p className="whitespace-pre-wrap text-sm leading-6">
                               {message.content?.text}
@@ -403,7 +461,7 @@ function ChatbotPanel({
                       <div className="rounded-2xl border border-white/10 bg-slate-900/90 px-3 py-2.5">
                         <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                           <Bot size={11} />
-                          Assistant
+                          {ASSISTANT_NAME}
                         </div>
                         <TypingIndicator />
                       </div>
@@ -464,6 +522,11 @@ function ChatbotPanel({
               {error}
             </div>
           )}
+          {followUpMessage && !followUpOpen ? (
+            <div className="mx-3 mt-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
+              {followUpMessage}
+            </div>
+          ) : null}
 
           {/* Merged suggestion pills */}
           <div className="px-3 py-2">
@@ -487,6 +550,70 @@ function ChatbotPanel({
               ))}
             </div>
           </div>
+
+          {messages.length >= 2 ? (
+            <div className="border-t border-white/10 px-3 py-2">
+              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                      Recruiter Follow-Up
+                    </div>
+                    <div className="mt-1 text-xs leading-5 text-slate-300">
+                      Want Harshith to follow up after this conversation?
+                    </div>
+                  </div>
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-400/40"
+                    onClick={() => setFollowUpOpen((current) => !current)}
+                    type="button"
+                  >
+                    <MailPlus size={12} />
+                    {followUpOpen ? "Hide" : "Request"}
+                  </button>
+                </div>
+                {followUpOpen ? (
+                  <form className="mt-3 grid gap-2" onSubmit={handleFollowUpSubmit}>
+                    <input
+                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
+                      onChange={(event) => handleFollowUpChange("recruiter_name", event.target.value)}
+                      placeholder="Your name"
+                      value={followUpState.recruiter_name}
+                    />
+                    <input
+                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
+                      onChange={(event) => handleFollowUpChange("email", event.target.value)}
+                      placeholder="Work email"
+                      type="email"
+                      value={followUpState.email}
+                    />
+                    <input
+                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
+                      onChange={(event) => handleFollowUpChange("company", event.target.value)}
+                      placeholder="Company (optional)"
+                      value={followUpState.company}
+                    />
+                    <textarea
+                      className="min-h-[72px] rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
+                      onChange={(event) => handleFollowUpChange("notes", event.target.value)}
+                      placeholder="Anything specific you want Harshith to follow up on?"
+                      value={followUpState.notes}
+                    />
+                    {followUpMessage ? (
+                      <div className="text-xs text-slate-300">{followUpMessage}</div>
+                    ) : null}
+                    <button
+                      className="rounded-xl bg-cyan-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                      disabled={followUpSubmitting}
+                      type="submit"
+                    >
+                      {followUpSubmitting ? "Sending..." : "Send follow-up request"}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {/* Compact input */}
           <div className="border-t border-white/10 px-3 py-2">

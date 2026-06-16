@@ -23,11 +23,12 @@ export const setAuthSession = (sessionId) => {
 export const startSession = async (name, location, password = "") =>
   api.post("start-session/", { name, location, password });
 
-export const sendMessage = async (sessionId, message, name) =>
+export const sendMessage = async (sessionId, message, name, roleFit = "") =>
   api.post("chat/", {
     conversation_id: sessionId,
     message,
     name,
+    role_fit: roleFit,
   });
 
 export const getHistory = async (sessionId, name) =>
@@ -70,3 +71,4 @@ export const updateAIConfig = async (payload) =>
   api.post("superadmin/update-ai-config/", payload);
 export const getHeatmap = async () => api.get("superadmin/heatmap/");
 export const getSystemHealth = async () => api.get("superadmin/system-health/");
+export const submitRecruiterFollowUp = async (payload) => api.post("follow-up/", payload);

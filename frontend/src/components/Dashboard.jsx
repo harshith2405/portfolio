@@ -6,6 +6,12 @@ import Projects from "./Projects";
 import Skills from "./Skills";
 import SuperAdminPanel from "./SuperAdminPanel";
 
+const ROLE_FIT_OPTIONS = [
+  { id: "backend", label: "Backend" },
+  { id: "full_stack", label: "Full Stack" },
+  { id: "ai", label: "AI" },
+];
+
 const resumeDownloadUrl =
   import.meta.env.VITE_RESUME_DOWNLOAD_URL ||
   (typeof window !== "undefined"
@@ -257,6 +263,7 @@ function Dashboard({
   onRefreshHealth,
   onRemoveAdmin,
   onReplayChat,
+  onRoleFitChange,
   onResetVisitor,
   onSearchAdmin,
   onSearchInputChange,
@@ -270,6 +277,7 @@ function Dashboard({
   projectInfo,
   presence,
   projectsRef,
+  roleFit,
   role,
   recruiterMode,
   recruiterSectionRef,
@@ -306,6 +314,34 @@ function Dashboard({
         visitorName={visitorName}
       />
       <MetricsPanel metrics={metrics} presence={presence} />
+      <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+              Role Focus
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Which kind of engineer are you hiring for? I will shift the portfolio and chat focus to match.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ROLE_FIT_OPTIONS.map((option) => (
+              <button
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  roleFit === option.id
+                    ? "bg-cyan-400 text-slate-950"
+                    : "border border-white/10 bg-slate-950/60 text-slate-200 hover:border-cyan-400/40"
+                }`}
+                key={option.id}
+                onClick={() => onRoleFitChange(option.id)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
       <Hero
         basics={basics}
         bio={sections["short bio"]}
@@ -322,10 +358,12 @@ function Dashboard({
         onProjectClick={onProjectClick}
         projectInfo={projectInfo}
         projects={projects}
+        roleFit={roleFit}
         sectionRef={projectsRef}
       />
       <Skills
         highlight={activeSection === "skills"}
+        roleFit={roleFit}
         sectionRef={skillsRef}
         skillGroups={skillGroups}
         strengths={strengths}

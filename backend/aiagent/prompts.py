@@ -191,6 +191,7 @@ def build_portfolio_chat_prompt(
     *,
     tone_instruction: str,
     length_instruction: str,
+    role_fit_instruction: str = "",
     fixed_context: str,
     recent_messages: Iterable,
 ) -> str:
@@ -200,6 +201,9 @@ def build_portfolio_chat_prompt(
         f"TONE: {tone_instruction}",
         f"LENGTH: {length_instruction}",
     ]
+
+    if role_fit_instruction:
+        sections.append(f"ROLE FIT FOCUS: {role_fit_instruction}")
 
     if fixed_context:
         sections.append(f"FIXED PORTFOLIO CONTEXT:\n{fixed_context}")
