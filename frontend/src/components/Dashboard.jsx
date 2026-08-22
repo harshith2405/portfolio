@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import Projects from "./Projects";
 import Skills from "./Skills";
 import SuperAdminPanel from "./SuperAdminPanel";
+import PortfolioExperience from "./PortfolioExperience";
 
 const ROLE_FIT_OPTIONS = [
   { id: "backend", label: "Backend" },
@@ -270,6 +271,7 @@ function Dashboard({
   onSelectAdminTab,
   onTrackEvent,
   onToggleRecruiterMode,
+  onOpenChat,
   onUploadResume,
   onUpdateAIConfig,
   onUpdateContent,
@@ -303,6 +305,72 @@ function Dashboard({
     .filter((line) => line.startsWith("- "))
     .map((line) => line.slice(2));
 
+  if (role !== "admin" && role !== "super_admin") {
+    return (
+      <PortfolioExperience
+        onOpenChat={onOpenChat}
+        onProjectClick={onProjectClick}
+        onRoleFitChange={onRoleFitChange}
+        onToggleRecruiterMode={onToggleRecruiterMode}
+        portfolio={portfolio}
+        projectInfo={projectInfo}
+        recruiterMode={recruiterMode}
+        roleFit={roleFit}
+        visitorName={visitorName}
+      />
+    );
+  }
+
+  return (
+    <div className="admin-full-view">
+      <PortfolioExperience
+        onOpenChat={onOpenChat}
+        onProjectClick={onProjectClick}
+        onRoleFitChange={onRoleFitChange}
+        onToggleRecruiterMode={onToggleRecruiterMode}
+        portfolio={portfolio}
+        projectInfo={projectInfo}
+        recruiterMode={recruiterMode}
+        roleFit={roleFit}
+      />
+      <section className="admin-workspace">
+      <div className="admin-workspace-head">
+        <div><p className="pro-kicker">Private workspace</p><h1>Admin panel</h1><p>Portfolio preview above · management controls below</p></div>
+        <button className="pro-outline px-4 py-2 text-sm" onClick={onResetVisitor} type="button">Exit admin</button>
+      </div>
+      <AdminConsole
+        activeTab={adminConsoleTab}
+        adminAnalytics={adminAnalytics}
+        adminHistory={adminHistory}
+        adminJourney={adminJourney}
+        adminReplay={adminReplay}
+        admins={adminUsers}
+        adminSessions={adminSessions}
+        contentSaveStatus={contentSaveStatus}
+        contentDrafts={contentDrafts}
+        loading={loadingAdminTools}
+        onAddAdmin={onAddAdmin}
+        onChangeContent={onChangeContent}
+        onLoadHistory={onLoadAdminHistory}
+        onRemoveAdmin={onRemoveAdmin}
+        onReplayChat={onReplayChat}
+        onSearch={onSearchAdmin}
+        onSearchInputChange={onSearchInputChange}
+        onSelectTab={onSelectAdminTab}
+        onUploadResume={onUploadResume}
+        onUpdateContent={onUpdateContent}
+        replaying={replayingAdminChat}
+        resumeAsset={resumeAsset}
+        role={role}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+      />
+      {role === "super_admin" ? <SuperAdminPanel aiConfig={aiConfig} heatmapData={heatmapData} loading={loadingAdminTools} onRefreshHeatmap={onRefreshHeatmap} onRefreshHealth={onRefreshHealth} onUpdateAIConfig={onUpdateAIConfig} systemHealth={systemHealth} /> : null}
+      </section>
+    </div>
+  );
+
+  /* Legacy public layout retained below only as reference during the redesign. */
   return (
     <div className="space-y-6">
       <Navbar
@@ -314,10 +382,10 @@ function Dashboard({
         visitorName={visitorName}
       />
       <MetricsPanel metrics={metrics} presence={presence} />
-      <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+      <div className="pro-surface rounded-[1.5rem] p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+            <p className="pro-kicker">
               Role Focus
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-400">
@@ -329,8 +397,8 @@ function Dashboard({
               <button
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   roleFit === option.id
-                    ? "bg-cyan-400 text-slate-950"
-                    : "border border-white/10 bg-slate-950/60 text-slate-200 hover:border-cyan-400/40"
+                    ? "pro-button"
+                    : "pro-outline"
                 }`}
                 key={option.id}
                 onClick={() => onRoleFitChange(option.id)}

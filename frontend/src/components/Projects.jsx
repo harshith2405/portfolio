@@ -213,15 +213,15 @@ function Projects({
           animate={{ opacity: 1, y: 0 }}
           className={`rounded-[2rem] border p-7 transition-all duration-500 ${
             highlight
-              ? "border-cyan-300 bg-cyan-400/10 shadow-[0_0_60px_rgba(34,211,238,0.18)]"
-              : "border-white/10 bg-white/5"
+              ? "border-white/30 bg-white/[0.08] shadow-[0_0_60px_rgba(255,255,255,0.09)]"
+              : "pro-surface"
           }`}
           initial={{ opacity: 0, y: 18 }}
           transition={{ delay: 0.08, duration: 0.45 }}
         >
           <div className="mb-6 flex items-end justify-between gap-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+              <p className="pro-kicker">
                 Projects
               </p>
               <h2 className="mt-2 text-3xl font-semibold text-white">
@@ -238,12 +238,12 @@ function Projects({
                 <motion.article
                   className={`cursor-pointer rounded-[1.5rem] border p-6 transition-all duration-300 ${
                     isActive
-                      ? "border-cyan-300 bg-cyan-400/10 shadow-[0_0_55px_rgba(34,211,238,0.25)]"
+                      ? "border-white/35 bg-white/[0.1] shadow-[0_0_55px_rgba(255,255,255,0.1)]"
                       : isRoleFitMatch(project)
-                        ? "border-cyan-300/35 bg-cyan-400/10"
+                        ? "border-white/25 bg-white/[0.07]"
                       : focusedProject
                         ? "border-white/5 bg-slate-950/30 opacity-55"
-                        : "border-white/10 bg-slate-950/60"
+                        : "pro-card"
                   }`}
                   key={project.name}
                   onClick={() => openProject(index)}
@@ -252,10 +252,10 @@ function Projects({
                 >
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-xl font-semibold text-white">{project.name}</h3>
-                    <ArrowUpRight className="mt-1 text-cyan-300" size={18} />
+                    <ArrowUpRight className="mt-1 text-zinc-300" size={18} />
                   </div>
                   {project.stack && (
-                    <p className="mt-3 line-clamp-2 text-sm font-medium text-cyan-200">
+                    <p className="mt-3 line-clamp-2 text-sm font-medium text-zinc-300">
                       {project.stack}
                     </p>
                   )}
@@ -282,25 +282,25 @@ function Projects({
           >
             <motion.div
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="relative h-[72vh] w-[48vw] min-w-[720px] max-w-[920px] overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.14),_transparent_35%),linear-gradient(160deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] shadow-[0_0_120px_rgba(34,211,238,0.16)]"
+              className="relative h-[72vh] w-[48vw] min-w-[720px] max-w-[920px] overflow-hidden rounded-[2rem] border border-white/15 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_35%),linear-gradient(160deg,rgba(23,23,23,0.98),rgba(2,2,2,0.98))] shadow-[0_0_120px_rgba(0,0,0,0.5)]"
               exit={{ opacity: 0, scale: 0.97, y: 22 }}
               initial={{ opacity: 0, scale: 0.94, y: 24 }}
               onClick={(event) => event.stopPropagation()}
               transition={{ duration: 0.24 }}
             >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
 
               <div className="flex h-full flex-col">
                 <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+                    <p className="pro-kicker">
                       Project
                     </p>
                     <h3 className="mt-2 text-2xl font-semibold text-white">
                       {activeProject.name}
                     </h3>
                     {activeProject.stack && (
-                      <p className="mt-3 text-sm font-medium text-cyan-200">
+                      <p className="mt-3 text-sm font-medium text-zinc-300">
                         {activeProject.stack}
                       </p>
                     )}
@@ -371,11 +371,11 @@ function Projects({
                   <ArchitectureView items={architectureItems} />
 
                   {activeProjectDetail?.outcome && (
-                    <div className="mt-4 rounded-[1.1rem] border border-cyan-400/15 bg-cyan-400/5 p-4">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
+                    <div className="mt-4 rounded-[1.1rem] border border-white/15 bg-white/[0.04] p-4">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-300">
                         Outcome / Impact
                       </div>
-                      <p className="mt-3 text-sm leading-7 text-cyan-100">
+                      <p className="mt-3 text-sm leading-7 text-zinc-200">
                         {activeProjectDetail.outcome}
                       </p>
                     </div>

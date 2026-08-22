@@ -137,6 +137,7 @@ function Home() {
   const [roleFit, setRoleFit] = useState(DEFAULT_ROLE_FIT);
   const [booting, setBooting] = useState(false);
   const [wakeHint, setWakeHint] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [loadingAdminTools, setLoadingAdminTools] = useState(false);
   const [adminConsoleTab, setAdminConsoleTab] = useState("sessions");
   const [adminAnalytics, setAdminAnalytics] = useState({
@@ -795,9 +796,8 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-[1700px] flex-col gap-6 px-4 py-4 lg:flex-row lg:px-6">
-        <div className="lg:w-[70%]">
+    <div className="min-h-screen bg-transparent text-slate-100">
+      <div className="min-h-screen">
           <Dashboard
             activeSection={activeSection}
             adminConsoleTab={adminConsoleTab}
@@ -817,6 +817,7 @@ function Home() {
             onAddAdmin={handleAddAdmin}
             onChangeContent={handleChangeContent}
             onLoadAdminHistory={handleLoadAdminHistory}
+            onOpenChat={() => setCopilotOpen(true)}
             onProjectClick={handleProjectFocus}
             onRefreshHeatmap={handleRefreshHeatmap}
             onRefreshHealth={handleRefreshHealth}
@@ -848,11 +849,9 @@ function Home() {
             systemHealth={systemHealth}
             visitorName={visitorName}
           />
-        </div>
-
-        <div className="lg:w-[30%]">
           <ChatbotPanel
             booting={booting}
+            isOpen={copilotOpen}
             conversations={conversations}
             error={error}
             messages={messages}
@@ -860,6 +859,7 @@ function Home() {
             onAction={handleAction}
             onFollowUpSubmit={handleRecruiterFollowUp}
             onNewChat={handleNewChat}
+            onClose={() => setCopilotOpen(false)}
             onSelectConversation={handleSelectConversation}
             onFocusProject={setFocusedProject}
             onUpdateConversations={setConversations}
@@ -871,13 +871,12 @@ function Home() {
             sessionId={sessionId}
             setError={setError}
           />
-        </div>
       </div>
 
       {showNameModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/95 p-8 shadow-2xl shadow-cyan-950/40">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl">
+          <div className="pro-surface w-full max-w-md rounded-3xl p-8 shadow-2xl shadow-black/70">
+            <p className="pro-kicker mb-3">
               Portfolio Access
             </p>
             <h1 className="text-3xl font-semibold text-white">
@@ -887,7 +886,7 @@ function Home() {
               Recruiters continue normally. Registered admins are asked for a password.
             </p>
             {wakeHint ? (
-              <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+              <div className="mt-4 rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3 text-sm text-zinc-200">
                 Waking backend... Render free hosting can take a little time after inactivity.
               </div>
             ) : null}
@@ -895,14 +894,14 @@ function Home() {
             <form className="mt-6 space-y-4" onSubmit={handleNameSubmit}>
               <input
                 autoFocus
-                className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-cyan-400"
+                className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-white/40"
                 onChange={(event) => setDraftName(event.target.value)}
                 placeholder="Enter your name"
                 value={draftName}
               />
               {requirePassword && (
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-cyan-400"
+                  className="w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-base text-white placeholder:text-slate-500 focus:border-white/40"
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Enter admin password"
                   type="password"
@@ -915,7 +914,7 @@ function Home() {
                 </div>
               )}
               <button
-                className="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
+                className="pro-button w-full px-4 py-3 font-semibold"
                 disabled={booting}
                 type="submit"
               >

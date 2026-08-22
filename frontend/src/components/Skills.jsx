@@ -22,13 +22,13 @@ function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
         animate={{ opacity: 1, y: 0 }}
         className={`rounded-[2rem] border p-7 transition-all duration-500 ${
           highlight
-            ? "border-fuchsia-300 bg-fuchsia-400/10 shadow-[0_0_60px_rgba(232,121,249,0.15)]"
-            : "border-white/10 bg-white/5"
+            ? "border-white/30 bg-white/[0.08] shadow-[0_0_60px_rgba(255,255,255,0.09)]"
+            : "pro-surface"
         }`}
         initial={{ opacity: 0, y: 18 }}
         transition={{ delay: 0.12, duration: 0.45 }}
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-fuchsia-300">
+        <p className="pro-kicker">
           Skills
         </p>
         <h2 className="mt-2 text-3xl font-semibold text-white">
@@ -38,7 +38,7 @@ function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
         <div className="mt-8 grid gap-5 xl:grid-cols-2">
           {skillGroups.map((group) => (
             <div
-              className="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-6"
+              className="pro-card rounded-[1.5rem] p-6"
               key={group.label}
             >
               <div className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
@@ -49,10 +49,10 @@ function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
                   <button
                     className={`rounded-full border px-4 py-2 text-sm transition ${
                       selectedSkill === item
-                        ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-100"
+                        ? "border-white/35 bg-white/15 text-white"
                         : isRoleFitMatch(`${group.label} ${item}`)
-                          ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-100"
-                        : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
+                          ? "border-white/25 bg-white/[0.08] text-white"
+                        : "border-white/10 bg-white/5 text-slate-200 hover:border-white/30"
                     }`}
                     key={item}
                     onClick={() => setSelectedSkill(item)}
@@ -67,8 +67,8 @@ function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
         </div>
 
         {strengths.length > 0 && (
-          <div className="mt-6 rounded-[1.5rem] border border-fuchsia-400/10 bg-fuchsia-400/5 p-6">
-            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-200">
+          <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-6">
+            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-zinc-300">
               DSA & Problem Solving
             </div>
             <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-200 md:grid-cols-2">
@@ -77,10 +77,10 @@ function Skills({ highlight, roleFit, sectionRef, skillGroups, strengths }) {
                   <button
                     className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                       selectedSkill === item
-                        ? "border-fuchsia-300 bg-fuchsia-400/20 text-fuchsia-50"
+                        ? "border-white/35 bg-white/15 text-white"
                         : isRoleFitMatch(item)
-                          ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-100"
-                        : "border-white/10 bg-white/5 text-slate-200 hover:border-fuchsia-300/40"
+                          ? "border-white/25 bg-white/[0.08] text-white"
+                        : "border-white/10 bg-white/5 text-slate-200 hover:border-white/30"
                     }`}
                     onClick={() => setSelectedSkill(item)}
                     type="button"

@@ -1,26 +1,59 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Bot, History, MailPlus, Mic, PanelLeftClose, PanelLeft, SendHorizonal, Sparkles, Volume2 } from "lucide-react";
+import {
+  BookOpen,
+  Bot,
+  ChevronDown,
+  ChevronUp,
+  History,
+  MailPlus,
+  Mic,
+  PanelLeftClose,
+  PanelLeft,
+  SendHorizonal,
+  Sparkles,
+  User,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 
 import { getHistory, sendMessage } from "../services/api";
 
-const SUGGESTED_PROMPTS = ["Why hire me?", "Show my projects", "What are my skills?"];
+const SUGGESTED_PROMPTS = [
+  "Why hire Harshith?",
+  "What is your highest-impact project?",
+  "Tell me about your LeetCode achievements",
+];
+
 const ASSISTANT_NAME = "Harshith";
 const ROLE_FIT_PROMPTS = {
-  backend: ["Show your backend work", "How do you design APIs?", "Tell me about database decisions"],
-  full_stack: ["How do you work end-to-end?", "Show your best full-stack project", "How do you balance frontend and backend?"],
-  ai: ["Show your AI work", "Explain your chatbot architecture", "How do you handle model trade-offs?"],
+  backend: [
+    "How do you design scalable APIs?",
+    "Tell me about your database & caching decisions",
+    "How do you optimize backend performance?",
+  ],
+  full_stack: [
+    "How do you work end-to-end?",
+    "Show your best full-stack architecture",
+    "How do you connect frontend UI with distributed APIs?",
+  ],
+  ai: [
+    "Explain your HyDE RAG architecture",
+    "Tell me about your real-time computer vision system",
+    "How do you reduce hallucinations in AI responses?",
+  ],
 };
 
 function TypingIndicator() {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 py-1 px-2">
       {[0, 1, 2].map((dot) => (
         <motion.span
-          animate={{ opacity: [0.35, 1, 0.35], y: [0, -4, 0] }}
-          className="h-2.5 w-2.5 rounded-full bg-cyan-300"
+          animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+          className="h-2 w-2 rounded-full bg-cyan-400"
           key={dot}
-          transition={{ duration: 0.9, delay: dot * 0.12, repeat: Infinity }}
+          transition={{ duration: 0.8, delay: dot * 0.15, repeat: Infinity }}
         />
       ))}
     </div>
@@ -31,9 +64,11 @@ function ChatbotPanel({
   booting,
   conversations,
   error,
+  isOpen,
   messages,
   name,
   onAction,
+  onClose,
   onFollowUpSubmit,
   onFocusProject,
   onNewChat,
@@ -54,7 +89,7 @@ function ChatbotPanel({
   const [voiceInputSupported, setVoiceInputSupported] = useState(false);
   const [speechOutputSupported, setSpeechOutputSupported] = useState(false);
   const [followUps, setFollowUps] = useState(SUGGESTED_PROMPTS);
-  const [historyOpen, setHistoryOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [openEvidenceIds, setOpenEvidenceIds] = useState([]);
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [followUpState, setFollowUpState] = useState({
@@ -198,7 +233,7 @@ function ChatbotPanel({
     try {
       const [response] = await Promise.all([
         sendMessage(sessionId, text, name, roleFit),
-        new Promise((resolve) => window.setTimeout(resolve, 850)),
+        new Promise((resolve) => window.setTimeout(resolve, 600)),
       ]);
       const nextSessionId = String(response.data.session_id || response.data.conversation_id);
       onUpdateSession(nextSessionId);
@@ -238,8 +273,8 @@ function ChatbotPanel({
     [roleFit]
   );
   const mergedSuggestions = hasMessages
-    ? [...new Set([...followUps, ...roleSuggestions])].slice(0, 2)
-    : roleSuggestions.slice(0, 2);
+    ? [...new Set([...followUps, ...roleSuggestions])].slice(0, 3)
+    : roleSuggestions.slice(0, 3);
 
   const toggleEvidence = (messageId) => {
     setOpenEvidenceIds((current) =>
@@ -278,391 +313,403 @@ function ChatbotPanel({
   };
 
   return (
-    <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
-      <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-xl">
-
-        {/* ── Compact Header ── */}
-        <div className="border-b border-white/10 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-cyan-300">
-                Portfolio Copilot
-              </p>
-              <h2 className="mt-1 text-lg font-semibold leading-tight text-white">
-                Ask anything about this candidate
-              </h2>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] transition ${
-                  speakReplies && speechOutputSupported
-                    ? "bg-cyan-400 text-slate-950"
-                    : "border border-white/10 bg-white/5 text-slate-400"
-                }`}
-                onClick={() => {
-                  if (!speechOutputSupported) {
-                    setError("Speech playback is not supported in this browser.");
-                    return;
-                  }
-                  setError("");
-                  setSpeakReplies((current) => {
-                    const next = !current;
-                    if (next) {
-                      speakText("Voice replies enabled.");
-                    } else if ("speechSynthesis" in window) {
-                      window.speechSynthesis.cancel();
-                    }
-                    return next;
-                  });
-                }}
-                type="button"
-                title={
-                  speechOutputSupported
-                    ? speakReplies
-                      ? "Voice replies on"
-                      : "Voice replies off"
-                    : "Speech playback unavailable"
-                }
-              >
-                <Volume2 size={12} />
-              </button>
-              <button
-                className={`inline-flex items-center justify-center rounded-full p-1.5 transition ${
-                  historyOpen
-                    ? "bg-white/10 text-cyan-300"
-                    : "bg-white/5 text-slate-400 hover:text-cyan-300"
-                }`}
-                onClick={() => setHistoryOpen((o) => !o)}
-                type="button"
-                title={historyOpen ? "Hide history" : "Show history"}
-              >
-                {historyOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
-              </button>
-              <button
-                className="rounded-xl bg-cyan-400 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-300"
-                onClick={onNewChat}
-                type="button"
-              >
-                New chat
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Middle: Chat messages + Session history sidebar ── */}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-
-          {/* Chat column */}
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-3 py-3">
-              {booting ? (
-                <div className="flex h-full items-center justify-center">
-                  <TypingIndicator />
+    <AnimatePresence>
+      {isOpen ? (
+        <motion.div
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-xl"
+          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <motion.div
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="flex h-[min(820px,calc(100svh-2rem))] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/[0.12] bg-[#0c0c11] shadow-2xl"
+            exit={{ opacity: 0, y: 24, scale: 0.97 }}
+            initial={{ opacity: 0, y: 28, scale: 0.97 }}
+            onClick={(event) => event.stopPropagation()}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4 bg-[#0e0e14]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.08] border border-white/10 text-white">
+                  <Sparkles size={16} className="text-cyan-400" />
                 </div>
-              ) : messages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center px-2 text-center">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-cyan-300">
-                    <Sparkles size={22} />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-white leading-none">
+                      Harshith's Copilot
+                    </h2>
+                    <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live AI
+                    </span>
                   </div>
-                  <h3 className="mt-3 text-base font-semibold text-white">
-                    The assistant is ready
-                  </h3>
-                  <p className="mt-1.5 max-w-[220px] text-xs leading-5 text-slate-400">
-                    Ask for projects, skills, experience, or a quick summary.
+                  <p className="mt-1 text-xs text-[#8c8c94]">
+                    Ask about projects, system architecture, DSA rank & experience
                   </p>
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] ${
-                        voiceInputSupported
-                          ? "border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
-                          : "border border-white/10 bg-white/5 text-slate-500"
-                      }`}
-                    >
-                      Mic {voiceInputSupported ? "ready" : "unavailable"}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] ${
-                        speechOutputSupported
-                          ? "border border-cyan-400/20 bg-cyan-400/10 text-cyan-100"
-                          : "border border-white/10 bg-white/5 text-slate-500"
-                      }`}
-                    >
-                      Speaker {speechOutputSupported ? "ready" : "unavailable"}
-                    </span>
-                  </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <AnimatePresence initial={false}>
-                    {messages.map((message) => {
-                      const isUser = message.role === "user";
-                      const evidence = message.content?.evidence || [];
-                      const evidenceOpen = openEvidenceIds.includes(message.id);
+              </div>
 
-                      return (
-                        <motion.div
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                          initial={{ opacity: 0, y: 10 }}
-                          key={message.id}
-                        >
-                          <div
-                            className={`max-w-[92%] rounded-2xl border px-3 py-2.5 ${
-                              isUser
-                                ? "border-cyan-400/30 bg-cyan-400 text-slate-950"
-                                : "border-white/10 bg-slate-900/90 text-slate-100"
-                            }`}
-                          >
-                            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em]">
-                              {isUser ? <Sparkles size={11} /> : <Bot size={11} />}
-                              {isUser ? name : ASSISTANT_NAME}
-                            </div>
-                            <p className="whitespace-pre-wrap text-sm leading-6">
-                              {message.content?.text}
-                            </p>
-                            {!isUser && evidence.length ? (
-                              <div className="mt-3">
-                                <button
-                                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-400/40"
-                                  onClick={() => toggleEvidence(message.id)}
-                                  type="button"
-                                >
-                                  <BookOpen size={12} />
-                                  {evidenceOpen ? "Hide source" : "Show source"}
-                                </button>
-                                {evidenceOpen ? (
-                                  <div className="mt-2 space-y-2 rounded-xl border border-cyan-400/15 bg-cyan-400/5 p-3">
-                                    {evidence.map((source) => (
-                                      <div key={`${message.id}-${source.label}`}>
-                                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
-                                          {source.label}
-                                        </div>
-                                        <div className="mt-1 text-xs leading-5 text-slate-300">
-                                          {source.snippet}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
+              <div className="flex items-center gap-2">
+                {/* Voice toggle */}
+                {speechOutputSupported && (
+                  <button
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                      speakReplies
+                        ? "border-cyan-400/40 bg-cyan-400/20 text-cyan-200"
+                        : "border-white/10 bg-white/[0.04] text-[#8e8e96] hover:text-white"
+                    }`}
+                    onClick={() => {
+                      setSpeakReplies((curr) => {
+                        const next = !curr;
+                        if (next) speakText("Voice playback enabled.");
+                        else window.speechSynthesis.cancel();
+                        return next;
+                      });
+                    }}
+                    type="button"
+                    title={speakReplies ? "Mute voice replies" : "Enable voice replies"}
+                  >
+                    {speakReplies ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                  </button>
+                )}
 
-                  {loading && (
-                    <motion.div
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex justify-start"
-                      initial={{ opacity: 0, y: 8 }}
-                    >
-                      <div className="rounded-2xl border border-white/10 bg-slate-900/90 px-3 py-2.5">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                          <Bot size={11} />
-                          {ASSISTANT_NAME}
-                        </div>
-                        <TypingIndicator />
-                      </div>
-                    </motion.div>
-                  )}
-                  <div ref={endRef} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Session history sidebar (right, collapsible) ── */}
-          <AnimatePresence initial={false}>
-            {historyOpen && conversations.length > 0 && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 150, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="shrink-0 overflow-hidden border-l border-white/10"
-              >
-                <div className="h-full w-[150px] overflow-y-auto p-2">
-                  <div className="mb-2 flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.25em] text-slate-500">
-                    <History size={10} />
-                    History
-                  </div>
-                  <div className="space-y-1.5">
-                    {conversations.map((conversation) => (
-                      <button
-                        className={`w-full rounded-xl border px-2.5 py-2 text-left transition ${
-                          String(conversation.id) === String(sessionId)
-                            ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
-                            : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"
-                        }`}
-                        key={conversation.id}
-                        onClick={() => onSelectConversation(conversation.id)}
-                        type="button"
-                      >
-                        <div className="truncate text-[11px] font-semibold">
-                          {conversation.title}
-                        </div>
-                        <div className="mt-0.5 truncate text-[9px] leading-4 text-slate-400">
-                          {conversation.preview}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* ── Bottom: error + merged suggestions + input ── */}
-        <div className="border-t border-white/10">
-          {error && (
-            <div className="mx-3 mt-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-              {error}
-            </div>
-          )}
-          {followUpMessage && !followUpOpen ? (
-            <div className="mx-3 mt-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">
-              {followUpMessage}
-            </div>
-          ) : null}
-
-          {/* Merged suggestion pills */}
-          <div className="px-3 py-2">
-            <div className="flex flex-wrap gap-1.5">
-              {mergedSuggestions.map((prompt) => (
+                {/* History toggle */}
                 <button
-                  className={`rounded-full px-2.5 py-1 text-[10px] transition ${
-                    recruiterMode
-                      ? "border border-cyan-400/20 bg-cyan-400/10 text-cyan-100"
-                      : "border border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/30 hover:text-cyan-100"
+                  className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs transition ${
+                    historyOpen
+                      ? "border-white/30 bg-white/10 text-white"
+                      : "border-white/10 bg-white/[0.04] text-[#8e8e96] hover:text-white"
                   }`}
-                  key={prompt}
-                  onClick={() => {
-                    void onTrackEvent("button_click", { target: "suggested_prompt", prompt });
-                    void submitMessage(prompt);
-                  }}
+                  onClick={() => setHistoryOpen((o) => !o)}
+                  type="button"
+                  title="Toggle conversation history"
+                >
+                  <History size={14} />
+                  <span className="hidden sm:inline">History</span>
+                </button>
+
+                {/* New chat */}
+                <button
+                  className="rounded-lg bg-white/[0.08] border border-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/15"
+                  onClick={onNewChat}
                   type="button"
                 >
-                  {prompt}
+                  + New Chat
                 </button>
-              ))}
-            </div>
-          </div>
 
-          {messages.length >= 2 ? (
-            <div className="border-t border-white/10 px-3 py-2">
-              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
-                      Recruiter Follow-Up
-                    </div>
-                    <div className="mt-1 text-xs leading-5 text-slate-300">
-                      Want Harshith to follow up after this conversation?
-                    </div>
-                  </div>
-                  <button
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-400/40"
-                    onClick={() => setFollowUpOpen((current) => !current)}
-                    type="button"
-                  >
-                    <MailPlus size={12} />
-                    {followUpOpen ? "Hide" : "Request"}
-                  </button>
-                </div>
-                {followUpOpen ? (
-                  <form className="mt-3 grid gap-2" onSubmit={handleFollowUpSubmit}>
-                    <input
-                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
-                      onChange={(event) => handleFollowUpChange("recruiter_name", event.target.value)}
-                      placeholder="Your name"
-                      value={followUpState.recruiter_name}
-                    />
-                    <input
-                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
-                      onChange={(event) => handleFollowUpChange("email", event.target.value)}
-                      placeholder="Work email"
-                      type="email"
-                      value={followUpState.email}
-                    />
-                    <input
-                      className="rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
-                      onChange={(event) => handleFollowUpChange("company", event.target.value)}
-                      placeholder="Company (optional)"
-                      value={followUpState.company}
-                    />
-                    <textarea
-                      className="min-h-[72px] rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm text-white"
-                      onChange={(event) => handleFollowUpChange("notes", event.target.value)}
-                      placeholder="Anything specific you want Harshith to follow up on?"
-                      value={followUpState.notes}
-                    />
-                    {followUpMessage ? (
-                      <div className="text-xs text-slate-300">{followUpMessage}</div>
-                    ) : null}
-                    <button
-                      className="rounded-xl bg-cyan-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                      disabled={followUpSubmitting}
-                      type="submit"
-                    >
-                      {followUpSubmitting ? "Sending..." : "Send follow-up request"}
-                    </button>
-                  </form>
-                ) : null}
+                {/* Close */}
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-[#9e9ea6] transition hover:bg-white hover:text-black ml-1"
+                  onClick={onClose}
+                  type="button"
+                  aria-label="Close Assistant"
+                >
+                  <X size={16} />
+                </button>
               </div>
             </div>
-          ) : null}
 
-          {/* Compact input */}
-          <div className="border-t border-white/10 px-3 py-2">
-            <form
-              className="flex items-end gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submitMessage(draft);
-              }}
-            >
-              <textarea
-                className="min-h-[52px] flex-1 resize-none rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm leading-5 text-white placeholder:text-slate-500 focus:border-cyan-400"
-                disabled={loading}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void submitMessage(draft);
-                  }
+            {/* ── Middle: Messages + Sidebar ── */}
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              
+              {/* Chat Messages Column */}
+              <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#0a0a0e]">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                  {booting ? (
+                    <div className="flex h-full items-center justify-center">
+                      <TypingIndicator />
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center text-center px-4">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-cyan-400">
+                        <Sparkles size={28} />
+                      </div>
+                      <h3 className="mt-4 text-lg font-bold text-white">
+                        Ask about Harshith's Experience & Code
+                      </h3>
+                      <p className="mt-2 max-w-sm text-xs leading-relaxed text-[#8c8c94]">
+                        I answer in first-person with verified facts grounded in this portfolio, including architecture choices, DSA ranking, and project outcomes.
+                      </p>
+                      <div className="mt-6 flex flex-wrap justify-center gap-2">
+                        {mergedSuggestions.map((prompt) => (
+                          <button
+                            key={prompt}
+                            onClick={() => {
+                              void onTrackEvent("button_click", { target: "suggested_prompt", prompt });
+                              void submitMessage(prompt);
+                            }}
+                            type="button"
+                            className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs text-[#c4c4cc] transition hover:border-white/30 hover:text-white"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <AnimatePresence initial={false}>
+                        {messages.map((message) => {
+                          const isUser = message.role === "user";
+                          const evidence = message.content?.evidence || [];
+                          const evidenceOpen = openEvidenceIds.includes(message.id);
+
+                          return (
+                            <motion.div
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                              initial={{ opacity: 0, y: 8 }}
+                              key={message.id}
+                            >
+                              <div
+                                className={`max-w-[88%] rounded-2xl p-4 ${
+                                  isUser
+                                    ? "bg-white text-black font-medium text-sm shadow-md"
+                                    : "border border-white/[0.08] bg-[#121218] text-[#e2e2e8] text-sm leading-relaxed"
+                                }`}
+                              >
+                                <div className={`mb-1.5 flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider ${
+                                  isUser ? "text-neutral-600" : "text-[#71717a]"
+                                }`}>
+                                  {isUser ? <User size={11} /> : <Bot size={11} className="text-cyan-400" />}
+                                  <span>{isUser ? (name || "You") : "Harshith (AI)"}</span>
+                                </div>
+
+                                <div className="whitespace-pre-wrap leading-relaxed">
+                                  {message.content?.text}
+                                </div>
+
+                                {!isUser && evidence.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                                    <button
+                                      className="inline-flex items-center gap-1 text-[11px] font-mono text-cyan-400 hover:text-cyan-300 transition"
+                                      onClick={() => toggleEvidence(message.id)}
+                                      type="button"
+                                    >
+                                      <BookOpen size={12} />
+                                      <span>{evidenceOpen ? "Hide Portfolio Citations" : `View Evidence (${evidence.length})`}</span>
+                                      {evidenceOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                    </button>
+
+                                    {evidenceOpen && (
+                                      <div className="mt-2 space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3 text-xs">
+                                        {evidence.map((source, i) => (
+                                          <div key={i} className="space-y-0.5">
+                                            <span className="font-mono text-[10px] text-cyan-300 uppercase font-semibold tracking-wider">
+                                              {source.label}
+                                            </span>
+                                            <p className="text-[#a0a0a8] text-[11px] leading-relaxed">
+                                              {source.snippet}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+
+                      {loading && (
+                        <motion.div
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex justify-start"
+                          initial={{ opacity: 0, y: 8 }}
+                        >
+                          <div className="rounded-2xl border border-white/[0.08] bg-[#121218] p-3">
+                            <div className="mb-1 flex items-center gap-1 text-[10px] font-mono text-[#71717a] uppercase">
+                              <Bot size={11} className="text-cyan-400" />
+                              <span>Harshith is thinking...</span>
+                            </div>
+                            <TypingIndicator />
+                          </div>
+                        </motion.div>
+                      )}
+                      <div ref={endRef} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Session History Sidebar */}
+              <AnimatePresence initial={false}>
+                {historyOpen && (
+                  <motion.aside
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 220, opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="shrink-0 overflow-hidden border-l border-white/[0.08] bg-[#09090d]"
+                  >
+                    <div className="h-full w-[220px] overflow-y-auto p-3">
+                      <div className="mb-3 flex items-center justify-between text-xs font-mono text-[#71717a] uppercase tracking-wider">
+                        <span>Past Sessions</span>
+                        <span>{conversations.length}</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {conversations.map((conv) => {
+                          const isActive = String(conv.id) === String(sessionId);
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => onSelectConversation(conv.id)}
+                              type="button"
+                              className={`w-full rounded-xl p-2.5 text-left transition text-xs ${
+                                isActive
+                                  ? "border border-white/30 bg-white/10 text-white"
+                                  : "border border-white/[0.04] bg-white/[0.02] text-[#8c8c94] hover:bg-white/[0.05] hover:text-white"
+                              }`}
+                            >
+                              <div className="truncate font-medium">{conv.title || "New chat"}</div>
+                              <div className="truncate text-[10px] text-[#63636b] mt-0.5">{conv.preview}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
+
+            </div>
+
+            {/* ── Bottom Section: Suggestion Chips, Recruiter Drawer, Input Bar ── */}
+            <div className="border-t border-white/[0.08] bg-[#0c0c11] p-4">
+              
+              {error && (
+                <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-2.5 text-xs text-rose-300">
+                  {error}
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {messages.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {mergedSuggestions.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => {
+                        void onTrackEvent("button_click", { target: "suggested_prompt", prompt });
+                        void submitMessage(prompt);
+                      }}
+                      type="button"
+                      className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] text-[#a0a0a8] transition hover:border-white/20 hover:text-white"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Recruiter Follow Up Section */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-[#8c8c94]">
+                  <span>Want Harshith to follow up directly?</span>
+                  <button
+                    onClick={() => setFollowUpOpen((o) => !o)}
+                    type="button"
+                    className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition font-medium"
+                  >
+                    <MailPlus size={13} />
+                    <span>{followUpOpen ? "Hide Form" : "Request Interview Connect"}</span>
+                  </button>
+                </div>
+
+                {followUpOpen && (
+                  <form onSubmit={handleFollowUpSubmit} className="mt-3 grid gap-2.5 rounded-2xl border border-white/[0.08] bg-[#121218] p-3.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-xs text-white placeholder:text-[#63636b] focus:border-white/30"
+                        placeholder="Your Name"
+                        value={followUpState.recruiter_name}
+                        onChange={(e) => handleFollowUpChange("recruiter_name", e.target.value)}
+                      />
+                      <input
+                        type="email"
+                        className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-xs text-white placeholder:text-[#63636b] focus:border-white/30"
+                        placeholder="Work Email"
+                        value={followUpState.email}
+                        onChange={(e) => handleFollowUpChange("email", e.target.value)}
+                      />
+                    </div>
+                    <input
+                      className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-xs text-white placeholder:text-[#63636b] focus:border-white/30"
+                      placeholder="Company (optional)"
+                      value={followUpState.company}
+                      onChange={(e) => handleFollowUpChange("company", e.target.value)}
+                    />
+                    <textarea
+                      rows={2}
+                      className="rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-xs text-white placeholder:text-[#63636b] focus:border-white/30 resize-none"
+                      placeholder="Role details or questions..."
+                      value={followUpState.notes}
+                      onChange={(e) => handleFollowUpChange("notes", e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      disabled={followUpSubmitting}
+                      className="rounded-lg bg-white py-2 text-xs font-semibold text-black transition hover:bg-[#e4e4e7] disabled:opacity-50"
+                    >
+                      {followUpSubmitting ? "Sending..." : "Submit Follow-Up Request"}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* Input bar */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void submitMessage(draft);
                 }}
-                placeholder="Ask about this candidate..."
-                value={draft}
-              />
-              <button
-                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition ${
-                  listening
-                    ? "border-cyan-300 bg-cyan-400/20 text-cyan-200"
-                    : voiceInputSupported
-                      ? "border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40"
-                      : "border-white/10 bg-white/5 text-slate-500"
-                }`}
-                onClick={triggerSpeechInput}
-                type="button"
-                title={voiceInputSupported ? "Start voice input" : "Voice input unavailable"}
+                className="flex items-center gap-2 rounded-2xl border border-white/15 bg-[#121218] p-1.5 pl-4 focus-within:border-white/40 transition"
               >
-                <Mic size={15} />
-              </button>
-              <button
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400 text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={loading || !draft.trim()}
-                type="submit"
-              >
-                <SendHorizonal size={15} />
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+                <input
+                  type="text"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Ask a technical or hiring question about Harshith..."
+                  className="flex-1 bg-transparent text-sm text-white placeholder:text-[#63636b] outline-none"
+                  disabled={loading}
+                />
+
+                {voiceInputSupported && (
+                  <button
+                    type="button"
+                    onClick={triggerSpeechInput}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
+                      listening
+                        ? "bg-cyan-500/20 text-cyan-300 animate-pulse border border-cyan-400/40"
+                        : "text-[#8c8c94] hover:text-white hover:bg-white/[0.06]"
+                    }`}
+                    title={listening ? "Listening..." : "Click to speak"}
+                  >
+                    <Mic size={16} />
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !draft.trim()}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black transition hover:bg-[#e4e4e7] disabled:opacity-40 disabled:hover:bg-white"
+                  title="Send message"
+                >
+                  <SendHorizonal size={16} />
+                </button>
+              </form>
+
+            </div>
+
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

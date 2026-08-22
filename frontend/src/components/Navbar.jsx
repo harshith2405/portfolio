@@ -12,17 +12,17 @@ function Navbar({
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className="sticky top-4 z-20 mb-6 flex items-center justify-between rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl"
+      className="pro-surface sticky top-4 z-20 mb-6 flex items-center justify-between rounded-3xl px-5 py-4"
       initial={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.4 }}
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white">
           <Sparkles size={20} />
         </div>
         <div>
-          <div className="text-xs uppercase tracking-[0.35em] text-cyan-300">
-            AI Portfolio
+          <div className="pro-kicker">
+            Selected work
           </div>
           <div className="text-sm text-slate-400">
             Welcome, {visitorName || "Guest"}
@@ -35,8 +35,8 @@ function Navbar({
         <button
           className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
             recruiterMode
-              ? "bg-cyan-400 text-slate-950"
-              : "border border-white/10 bg-white/5 text-slate-200 hover:border-cyan-400/40"
+              ? "pro-button"
+              : "pro-outline"
           }`}
           onClick={onToggleRecruiterMode}
           type="button"
@@ -45,7 +45,7 @@ function Navbar({
         </button>
         {isAdmin && (
           <button
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-cyan-400/40 hover:bg-cyan-400/10"
+            className="pro-outline inline-flex items-center gap-2 px-4 py-2 text-sm"
             onClick={onResetVisitor}
             type="button"
           >

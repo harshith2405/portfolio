@@ -89,20 +89,20 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
   return (
     <motion.section
       animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-400/10 via-slate-900 to-indigo-500/10 p-8 shadow-[0_0_80px_rgba(14,165,233,0.08)]"
+      className="pro-surface overflow-hidden rounded-[2rem] p-8 md:p-10"
       initial={{ opacity: 0, y: 24 }}
       transition={{ duration: 0.55 }}
     >
       <div className="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
         <div className="space-y-5">
-          <div className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200">
-            AI-powered recruiter walkthrough
+          <div className="pro-kicker inline-flex rounded-full border border-white/15 bg-white/[0.06] px-4 py-2">
+            Portfolio · 2026
           </div>
           <div className="space-y-3">
-            <h1 className="max-w-4xl text-4xl font-semibold leading-tight text-white md:text-6xl">
+            <h1 className="max-w-4xl text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-white md:text-7xl">
               {basics.name || "Your Name"}
             </h1>
-            <p className="text-lg font-medium text-cyan-200 md:text-2xl">
+            <p className="text-lg font-medium tracking-[-0.02em] text-zinc-300 md:text-2xl">
               {basics.role || ""}
             </p>
           </div>
@@ -110,7 +110,7 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
             {bio ||
               "Production-minded engineer building practical systems across backend, frontend, and AI."}
           </p>
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/40 p-5">
+          <div className="pro-card rounded-[1.5rem] p-5">
             <div className="text-xs uppercase tracking-[0.25em] text-slate-500">
               Internship Experience
             </div>
@@ -120,8 +120,8 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+        <div className="pro-card rounded-[1.75rem] p-6">
+          <p className="pro-kicker">
             Candidate Snapshot
           </p>
           <div className="mt-6 grid gap-3">
@@ -151,13 +151,13 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
                     const Icon = getLinkIcon(item.label);
                     return (
                       <a
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-200 transition hover:border-cyan-400/40 hover:text-cyan-100"
+                        className="pro-outline inline-flex items-center gap-2 px-3 py-2 text-sm"
                         href={item.href}
                         key={item.label}
                         rel={item.href.startsWith("mailto:") ? undefined : "noreferrer"}
                         target={item.href.startsWith("mailto:") ? undefined : "_blank"}
                       >
-                        {Icon ? <Icon size={14} className="text-cyan-300" /> : null}
+                        {Icon ? <Icon size={14} className="text-zinc-300" /> : null}
                         <span>{item.text}</span>
                       </a>
                     );
@@ -175,7 +175,7 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium leading-6 text-slate-100">
                   {item.label === "Location" ? (
-                    <MapPin size={14} className="shrink-0 text-cyan-300" />
+                    <MapPin size={14} className="shrink-0 text-zinc-300" />
                   ) : null}
                   <span>{item.value}</span>
                 </div>
@@ -191,7 +191,7 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
               </div>
             </div>
             <a
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/40 hover:text-cyan-100"
+              className="pro-outline inline-flex w-fit items-center gap-2 px-4 py-2 text-sm font-semibold"
               href={candidateResumeUrl}
               onClick={onResumeDownload}
               rel="noreferrer"
@@ -199,7 +199,7 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
             >
               Download Candidate Resume
             </a>
-            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
+            <div className="pro-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold">
               Explore with the chatbot
               <ArrowRight size={16} />
             </div>
