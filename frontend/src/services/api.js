@@ -40,6 +40,8 @@ export const createConversation = async (name) => api.post("conversations/", { n
 
 export const getPortfolio = async () => api.get("portfolio/");
 export const getProjectInfo = async () => api.get("project-info/");
+export const updateProjectInfo = async (payload) =>
+  api.post("superadmin/project-info/", payload);
 export const getContent = async (key) => api.get(`content/${key}/`);
 export const getMetrics = async () => api.get("metrics/");
 export const trackEvent = async (payload) => api.post("events/", payload);

@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  DEFAULT_ACHIEVEMENTS,
+  DEFAULT_PROFESSIONAL_TIMELINE,
+  parseAchievementRows,
+  parseProfessionalTimeline,
+} from "./portfolioEditableDefaults";
+import {
   Activity,
   ArrowDown,
   ArrowRight,
@@ -497,6 +503,14 @@ const ENGINEERING_PRINCIPLES = [
   },
 ];
 
+function getPortfolioField(section, label, fallback = "") {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = String(section || "").match(
+    new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im")
+  );
+  return match?.[1]?.trim() || fallback;
+}
+
 function PortfolioExperience({
   onOpenChat,
   onProjectClick,
@@ -517,6 +531,24 @@ function PortfolioExperience({
 
   const activePolygonProject = POLYGON_SYSTEMS[activePolygonIndex];
   const activeSnippet = HERO_SYSTEM_SNIPPETS[activeSnippetIndex];
+  const candidateBasics = portfolio?.sections?.["candidate basics"] || "";
+  const candidateName = getPortfolioField(candidateBasics, "Name", "Harshith Reddy Karra");
+  const candidateRole = getPortfolioField(
+    candidateBasics,
+    "Role",
+    "Full Stack Developer | Geospatial, 3D & Backend Systems Engineer"
+  );
+  const candidateCompany = getPortfolioField(candidateBasics, "Company", "Polygon");
+  const candidateBio =
+    portfolio?.sections?.["short bio"] ||
+    "I build production software across backend engineering, geospatial visualization, 3D web applications, and AI-powered systems.";
+  const achievements = parseAchievementRows(
+    portfolio?.sections?.achievements || DEFAULT_ACHIEVEMENTS
+  );
+  const professionalTimeline = parseProfessionalTimeline(
+    portfolio?.sections?.["professional work & education timeline"] ||
+      DEFAULT_PROFESSIONAL_TIMELINE
+  );
 
   // ── Keyboard shortcut Ctrl+K / Cmd+K to open AI Copilot ──
   useEffect(() => {
@@ -567,9 +599,9 @@ function PortfolioExperience({
               HK
             </span>
             <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-              <span>Harshith Reddy Karra</span>
+              <span>{candidateName}</span>
               <span className="text-xs font-mono text-cyan-400 font-normal hidden md:inline">
-                · Polygon
+                · {candidateCompany}
               </span>
             </div>
           </a>
@@ -635,13 +667,29 @@ function PortfolioExperience({
             {/* Hero Left Column */}
             <div>
               <motion.div
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.45 }}
+                className="mb-6 flex items-center gap-4"
+              >
+                <img
+                  alt={candidateName}
+                  className="h-20 w-20 rounded-[1.5rem] border border-white/15 object-cover object-top shadow-2xl shadow-black/40 sm:h-24 sm:w-24"
+                  src="/images/harshith-portrait.png"
+                />
+                <div>
+                  <div className="text-sm font-semibold tracking-wide text-white">{candidateName}</div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#8e8e96]">Portfolio walkthrough</div>
+                </div>
+              </motion.div>
+              <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1 text-xs font-medium text-cyan-300"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                <span>Full Stack Developer @ Polygon · Backend, Geospatial & 3D Systems</span>
+                <span>{candidateRole}{candidateCompany ? ` @ ${candidateCompany}` : ""}</span>
               </motion.div>
 
               <motion.h1
@@ -663,7 +711,7 @@ function PortfolioExperience({
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="mt-6 max-w-2xl text-base leading-relaxed text-[#a5a5ad] sm:text-lg"
               >
-                I am <strong className="text-white font-medium">Harshith Reddy Karra</strong>, a Full Stack Developer at <strong className="text-white font-medium">Polygon</strong> specializing in scalable backend architecture, geospatial visualization (GIS), 3D applications, BIM viewers, and spatial data infrastructure. With a solid competitive programming foundation (<strong className="text-white font-medium">Top 6.59% LeetCode</strong>, 1,852 contest rating), I engineer high-performance systems from PostGIS vector pipelines to real-time WebGL engines.
+                {candidateBio}
               </motion.p>
 
               {/* Minimalist Focus Tags */}
@@ -1139,7 +1187,7 @@ function PortfolioExperience({
             </div>
             <div className="flex items-center gap-3">
               <a
-                href="https://leetcode.com/u/karra_harshithr1/"
+                href={achievements.find((item) => item.title.toLowerCase().includes("leetcode"))?.url || "https://leetcode.com/u/karra_harshithr1/"}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20"
@@ -1148,7 +1196,7 @@ function PortfolioExperience({
                 <ExternalLink size={13} />
               </a>
               <a
-                href="https://www.hackerrank.com/profile/karra_harshithr1"
+                href={achievements.find((item) => item.title.toLowerCase().includes("hackerrank"))?.url || "https://www.hackerrank.com/profile/karra_harshithr1"}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/20"
@@ -1160,47 +1208,30 @@ function PortfolioExperience({
           </div>
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            
-            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.04] p-6">
-              <div className="flex items-center justify-between text-amber-400">
-                <Trophy size={24} />
-                <span className="font-mono text-xs font-bold uppercase tracking-wider">LeetCode</span>
-              </div>
-              <div className="mt-4 text-3xl font-extrabold text-white">Top 6.59%</div>
-              <p className="mt-1 text-xs text-[#a0a0a8]">Global leaderboard percentile</p>
-              <div className="mt-4 text-xs font-mono text-amber-300">Verified Ranking</div>
-            </div>
-
-            <div className="rounded-2xl border border-white/[0.1] bg-white/[0.02] p-6">
-              <div className="flex items-center justify-between text-cyan-400">
-                <Zap size={24} />
-                <span className="font-mono text-xs font-bold uppercase tracking-wider">Contest Rating</span>
-              </div>
-              <div className="mt-4 text-3xl font-extrabold text-white">1,852 ↗</div>
-              <p className="mt-1 text-xs text-[#a0a0a8]">Weekly Contest 508 (3/4 Solved)</p>
-              <div className="mt-4 text-xs font-mono text-cyan-300">Active Competitor</div>
-            </div>
-
-            <div className="rounded-2xl border border-white/[0.1] bg-white/[0.02] p-6">
-              <div className="flex items-center justify-between text-indigo-400">
-                <Award size={24} />
-                <span className="font-mono text-xs font-bold uppercase tracking-wider">Global Rank</span>
-              </div>
-              <div className="mt-4 text-3xl font-extrabold text-white">#1,350</div>
-              <p className="mt-1 text-xs text-[#a0a0a8]">Peak contest rank</p>
-              <div className="mt-4 text-xs font-mono text-indigo-300">Competitive Performance</div>
-            </div>
-
-            <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04] p-6">
-              <div className="flex items-center justify-between text-emerald-400">
-                <Code2 size={24} />
-                <span className="font-mono text-xs font-bold uppercase tracking-wider">HackerRank</span>
-              </div>
-              <div className="mt-4 text-3xl font-extrabold text-white">5 ⭐ Stars</div>
-              <p className="mt-1 text-xs text-[#a0a0a8]">Problem Solving Gold Badge</p>
-              <div className="mt-4 text-xs font-mono text-emerald-300">Algorithms & Data Structures</div>
-            </div>
-
+            {achievements.map((item, idx) => {
+              const accent = [
+                { border: "border-amber-500/25", background: "bg-amber-500/[0.04]", text: "text-amber-400", caption: "text-amber-300", icon: <Trophy size={24} /> },
+                { border: "border-cyan-500/25", background: "bg-cyan-500/[0.04]", text: "text-cyan-400", caption: "text-cyan-300", icon: <Zap size={24} /> },
+                { border: "border-indigo-500/25", background: "bg-indigo-500/[0.04]", text: "text-indigo-400", caption: "text-indigo-300", icon: <Award size={24} /> },
+                { border: "border-emerald-500/25", background: "bg-emerald-500/[0.04]", text: "text-emerald-400", caption: "text-emerald-300", icon: <Code2 size={24} /> },
+              ][idx % 4];
+              const card = (
+                <div className={`h-full rounded-2xl border ${accent.border} ${accent.background} p-6`}>
+                  <div className={`flex items-center justify-between ${accent.text}`}>
+                    {accent.icon}
+                    <span className="font-mono text-xs font-bold uppercase tracking-wider">{item.title}</span>
+                  </div>
+                  <div className="mt-4 text-3xl font-extrabold text-white">{item.value}</div>
+                  <p className="mt-1 text-xs text-[#a0a0a8]">{item.description}</p>
+                  <div className={`mt-4 text-xs font-mono ${accent.caption}`}>{item.caption}</div>
+                </div>
+              );
+              return item.url ? (
+                <a className="block transition hover:-translate-y-1" href={item.url} key={`${item.title}-${idx}`} target="_blank" rel="noreferrer">
+                  {card}
+                </a>
+              ) : <div key={`${item.title}-${idx}`}>{card}</div>;
+            })}
           </div>
 
         </div>
@@ -1222,7 +1253,7 @@ function PortfolioExperience({
           </div>
 
           <div className="mt-12 relative pl-6 sm:pl-8 border-l border-white/15 space-y-12">
-            {WORK_TIMELINE.map((item, idx) => (
+            {professionalTimeline.map((item, idx) => (
               <div key={item.id} className="relative group">
                 
                 {/* Pulsing Timeline Node Dot */}

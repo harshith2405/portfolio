@@ -257,6 +257,7 @@ function Dashboard({
   loadingAdminTools,
   onAddAdmin,
   onChangeContent,
+  onChangeProjectInfo,
   onLoadAdminHistory,
   metrics,
   onProjectClick,
@@ -275,8 +276,10 @@ function Dashboard({
   onUploadResume,
   onUpdateAIConfig,
   onUpdateContent,
+  onUpdateProjectInfo,
   portfolio,
   projectInfo,
+  projectInfoDrafts,
   presence,
   projectsRef,
   roleFit,
@@ -351,6 +354,7 @@ function Dashboard({
         loading={loadingAdminTools}
         onAddAdmin={onAddAdmin}
         onChangeContent={onChangeContent}
+        onChangeProjectInfo={onChangeProjectInfo}
         onLoadHistory={onLoadAdminHistory}
         onRemoveAdmin={onRemoveAdmin}
         onReplayChat={onReplayChat}
@@ -359,6 +363,8 @@ function Dashboard({
         onSelectTab={onSelectAdminTab}
         onUploadResume={onUploadResume}
         onUpdateContent={onUpdateContent}
+        onUpdateProjectInfo={onUpdateProjectInfo}
+        projectInfoDrafts={projectInfoDrafts}
         replaying={replayingAdminChat}
         resumeAsset={resumeAsset}
         role={role}

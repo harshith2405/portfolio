@@ -27,6 +27,71 @@ function LeadBadge({ score = 0, status = "new" }) {
   );
 }
 
+const CONTENT_ORDER = [
+  "candidate snapshot",
+  "candidate basics",
+  "short bio",
+  "internships",
+  "achievements",
+  "professional work & education timeline",
+  "skills",
+  "projects",
+  "resume highlights",
+  "github highlights",
+  "recruiter q&a",
+  "contact",
+  "chatbot behavior notes",
+];
+
+const humanize = (value) =>
+  value.replace(/\b\w/g, (character) => character.toUpperCase());
+
+function ProjectDetailsEditor({ project, disabled, onChange, onSave }) {
+  const listValue = (value) => (Array.isArray(value) ? value.join("\n") : value || "");
+  const fields = [
+    ["summary", "Project summary", "Short explanation shown at the top of the popup."],
+    ["why_matters", "Why it matters", "One point per line."],
+    ["design_choices", "Design choices", "One decision per line."],
+    ["contribution", "My contribution", "One contribution per line."],
+    ["constraints", "Constraints and trade-offs", "One trade-off per line."],
+    ["outcome", "Outcome", "The final result or impact."],
+  ];
+
+  return (
+    <details className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-4" key={project.slug}>
+      <summary className="cursor-pointer list-none text-base font-semibold text-white">
+        {project.project_name}
+        <span className="ml-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+          Popup details
+        </span>
+      </summary>
+      <div className="mt-5 grid gap-4">
+        {fields.map(([field, label, hint]) => (
+          <label className="grid gap-2" key={field}>
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {label}
+            </span>
+            <span className="text-xs text-slate-500">{hint}</span>
+            <textarea
+              className="min-h-24 w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-white"
+              onChange={(event) => onChange(project.slug, field, event.target.value)}
+              value={listValue(project[field])}
+            />
+          </label>
+        ))}
+        <button
+          className="w-fit rounded-2xl bg-amber-300 px-4 py-3 font-semibold text-slate-950"
+          disabled={disabled}
+          onClick={() => onSave(project.slug)}
+          type="button"
+        >
+          {disabled ? "Saving..." : "Save Project Details"}
+        </button>
+      </div>
+    </details>
+  );
+}
+
 function AdminConsole({
   activeTab,
   adminAnalytics,
@@ -40,6 +105,7 @@ function AdminConsole({
   loading,
   onAddAdmin,
   onChangeContent,
+  onChangeProjectInfo,
   onLoadHistory,
   onRemoveAdmin,
   onReplayChat,
@@ -48,6 +114,8 @@ function AdminConsole({
   onSelectTab,
   onUploadResume,
   onUpdateContent,
+  onUpdateProjectInfo,
+  projectInfoDrafts,
   replaying,
   resumeAsset,
   role,
@@ -63,8 +131,12 @@ function AdminConsole({
   const orderedContentEntries = useMemo(
     () =>
       Object.entries(contentDrafts).sort(([leftKey], [rightKey]) => {
-        if (leftKey === "candidate snapshot") return -1;
-        if (rightKey === "candidate snapshot") return 1;
+        const leftIndex = CONTENT_ORDER.indexOf(leftKey);
+        const rightIndex = CONTENT_ORDER.indexOf(rightKey);
+        if (leftIndex !== -1 || rightIndex !== -1) {
+          return (leftIndex === -1 ? Infinity : leftIndex) -
+            (rightIndex === -1 ? Infinity : rightIndex);
+        }
         return leftKey.localeCompare(rightKey);
       }),
     [contentDrafts]
@@ -470,6 +542,14 @@ function AdminConsole({
               {contentSaveStatus.message}
             </div>
           ) : null}
+          <div className="rounded-[1.5rem] border border-amber-300/20 bg-amber-300/[0.04] p-5">
+            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-200">
+              Portfolio content
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Edit each public portfolio section as plain text, then save that section. Changes are stored in the database and appear immediately.
+            </p>
+          </div>
           <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5">
             <div className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
               Candidate resume
@@ -512,7 +592,7 @@ function AdminConsole({
               key={key}
             >
               <div className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
-                {key}
+                {humanize(key)}
               </div>
               <textarea
                 className="mt-4 min-h-[180px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-white"
@@ -529,6 +609,25 @@ function AdminConsole({
               </button>
             </div>
           ))}
+          <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-5">
+            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-400">
+              Project popup details
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              These fields control the expanded project modal. They are separate from the compact project cards and are saved directly to the project database table.
+            </p>
+            <div className="mt-5 grid gap-3">
+              {(projectInfoDrafts || []).map((project) => (
+                <ProjectDetailsEditor
+                  disabled={loading}
+                  key={project.slug}
+                  onChange={onChangeProjectInfo}
+                  onSave={onUpdateProjectInfo}
+                  project={project}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
     </motion.section>

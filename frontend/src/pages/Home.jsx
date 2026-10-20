@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import ChatbotPanel from "../components/ChatbotPanel";
 import Dashboard from "../components/Dashboard";
 import {
+  DEFAULT_ACHIEVEMENTS,
+  DEFAULT_PROFESSIONAL_TIMELINE,
+} from "../components/portfolioEditableDefaults";
+import {
   addAdmin,
   createConversation,
   getAdminAnalytics,
@@ -26,6 +30,7 @@ import {
   uploadResume,
   updateAIConfig,
   updateContent,
+  updateProjectInfo,
 } from "../services/api";
 
 const LOCATION_KEY = "portfolio_mock_location";
@@ -123,6 +128,7 @@ function Home() {
   const [conversations, setConversations] = useState([]);
   const [portfolio, setPortfolio] = useState({ content: "", sections: {}, editable_content: [] });
   const [projectInfo, setProjectInfo] = useState([]);
+  const [projectInfoDrafts, setProjectInfoDrafts] = useState([]);
   const [contentDrafts, setContentDrafts] = useState({});
   const [contentSaveStatus, setContentSaveStatus] = useState(null);
   const [activeSection, setActiveSection] = useState("");
@@ -191,6 +197,13 @@ function Home() {
     if (!nextDrafts["candidate snapshot"]) {
       nextDrafts["candidate snapshot"] = buildDefaultSnapshotDraft(sections);
     }
+    if (!nextDrafts.achievements) {
+      nextDrafts.achievements = DEFAULT_ACHIEVEMENTS;
+    }
+    if (!nextDrafts["professional work & education timeline"]) {
+      nextDrafts["professional work & education timeline"] =
+        DEFAULT_PROFESSIONAL_TIMELINE;
+    }
 
     return nextDrafts;
   };
@@ -218,6 +231,7 @@ function Home() {
   const loadProjectInfo = async () => {
     const response = await getProjectInfo();
     setProjectInfo(response.data);
+    setProjectInfoDrafts(response.data);
   };
 
   const refreshMetrics = async () => {
@@ -786,6 +800,53 @@ function Home() {
     }
   };
 
+  const handleChangeProjectInfo = (slug, field, value) => {
+    setContentSaveStatus(null);
+    setProjectInfoDrafts((current) =>
+      current.map((project) =>
+        project.slug === slug ? { ...project, [field]: value } : project
+      )
+    );
+  };
+
+  const handleUpdateProjectInfo = async (slug) => {
+    const project = projectInfoDrafts.find((item) => item.slug === slug);
+    if (!project) return;
+
+    const normalizeList = (value) =>
+      Array.isArray(value)
+        ? value
+        : String(value || "")
+            .split("\n")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+    try {
+      setLoadingAdminTools(true);
+      setContentSaveStatus(null);
+      await updateProjectInfo({
+        ...project,
+        why_matters: normalizeList(project.why_matters),
+        design_choices: normalizeList(project.design_choices),
+        contribution: normalizeList(project.contribution),
+        constraints: normalizeList(project.constraints),
+      });
+      await loadProjectInfo();
+      setContentSaveStatus({
+        type: "success",
+        message: `${project.project_name} details saved successfully.`,
+      });
+    } catch (projectError) {
+      console.error("Failed to update project details", projectError);
+      setContentSaveStatus({
+        type: "error",
+        message: `Failed to save ${project.project_name}.`,
+      });
+    } finally {
+      setLoadingAdminTools(false);
+    }
+  };
+
   const handleRecruiterFollowUp = async (payload) => {
     await submitRecruiterFollowUp({
       ...payload,
@@ -833,8 +894,11 @@ function Home() {
             onUploadResume={handleUploadResume}
             onUpdateAIConfig={handleUpdateAIConfig}
             onUpdateContent={handleUpdateContent}
+            onUpdateProjectInfo={handleUpdateProjectInfo}
             portfolio={portfolio}
             projectInfo={projectInfo}
+            projectInfoDrafts={projectInfoDrafts}
+            onChangeProjectInfo={handleChangeProjectInfo}
             presence={presence}
             projectsRef={projectsRef}
             roleFit={roleFit}

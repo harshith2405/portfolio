@@ -98,13 +98,20 @@ function Hero({ basics, bio, contact, internshipSummary, onResumeDownload, snaps
           <div className="pro-kicker inline-flex rounded-full border border-white/15 bg-white/[0.06] px-4 py-2">
             Portfolio · 2026
           </div>
-          <div className="space-y-3">
-            <h1 className="max-w-4xl text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-white md:text-7xl">
-              {basics.name || "Your Name"}
-            </h1>
-            <p className="text-lg font-medium tracking-[-0.02em] text-zinc-300 md:text-2xl">
-              {basics.role || ""}
-            </p>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
+            <img
+              alt={basics.name ? `${basics.name} portrait` : "Candidate portrait"}
+              className="h-28 w-28 rounded-[1.75rem] border border-white/15 object-cover object-top shadow-2xl shadow-black/30 sm:h-32 sm:w-32"
+              src="/images/harshith-portrait.png"
+            />
+            <div className="space-y-3">
+              <h1 className="max-w-4xl text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-white md:text-7xl">
+                {basics.name || "Your Name"}
+              </h1>
+              <p className="text-lg font-medium tracking-[-0.02em] text-zinc-300 md:text-2xl">
+                {basics.role || ""}
+              </p>
+            </div>
           </div>
           <p className="max-w-3xl text-base leading-8 text-slate-300 md:text-lg">
             {bio ||
